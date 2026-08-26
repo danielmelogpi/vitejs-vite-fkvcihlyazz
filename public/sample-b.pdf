@@ -1,0 +1,81 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+2 0 obj
+<< /Length 206 >>
+stream
+BT /F1 26 Tf 72 652 Td (Document B - Page 1 of 4.) Tj ET
+BT /F1 18 Tf 72 592 Td (vue-pdf-embed lab sample document) Tj ET
+0.85 0.9 0.98 rg 72 492 300 60 re f
+0 0 0 rg
+BT /F1 24 Tf 90 507 Td (b-page-1) Tj ET
+endstream
+endobj
+3 0 obj
+<< /Length 206 >>
+stream
+BT /F1 26 Tf 72 652 Td (Document B - Page 2 of 4.) Tj ET
+BT /F1 18 Tf 72 592 Td (vue-pdf-embed lab sample document) Tj ET
+0.85 0.9 0.98 rg 72 492 300 60 re f
+0 0 0 rg
+BT /F1 24 Tf 90 507 Td (b-page-2) Tj ET
+endstream
+endobj
+4 0 obj
+<< /Length 206 >>
+stream
+BT /F1 26 Tf 72 652 Td (Document B - Page 3 of 4.) Tj ET
+BT /F1 18 Tf 72 592 Td (vue-pdf-embed lab sample document) Tj ET
+0.85 0.9 0.98 rg 72 492 300 60 re f
+0 0 0 rg
+BT /F1 24 Tf 90 507 Td (b-page-3) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Length 206 >>
+stream
+BT /F1 26 Tf 72 652 Td (Document B - Page 4 of 4.) Tj ET
+BT /F1 18 Tf 72 592 Td (vue-pdf-embed lab sample document) Tj ET
+0.85 0.9 0.98 rg 72 492 300 60 re f
+0 0 0 rg
+BT /F1 24 Tf 90 507 Td (b-page-4) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 10 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 10 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 3 0 R >>
+endobj
+8 0 obj
+<< /Type /Page /Parent 10 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 4 0 R >>
+endobj
+9 0 obj
+<< /Type /Page /Parent 10 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 5 0 R >>
+endobj
+10 0 obj
+<< /Type /Pages /Kids [6 0 R 7 0 R 8 0 R 9 0 R] /Count 4 >>
+endobj
+11 0 obj
+<< /Type /Catalog /Pages 10 0 R >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000009 00000 n 
+0000000084 00000 n 
+0000000341 00000 n 
+0000000598 00000 n 
+0000000855 00000 n 
+0000001112 00000 n 
+0000001239 00000 n 
+0000001366 00000 n 
+0000001493 00000 n 
+0000001620 00000 n 
+0000001696 00000 n 
+trailer
+<< /Size 12 /Root 11 0 R >>
+startxref
+1747
+%%EOF
