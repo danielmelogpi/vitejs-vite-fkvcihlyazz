@@ -4,10 +4,51 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Vue + TS</title>
+    <title>vue-pdf-embed lab</title>
+    <style>
+      body {
+        margin: 0 auto;
+        padding: 24px;
+        max-width: 46rem;
+        font: 15px/1.5 -apple-system, system-ui, sans-serif;
+      }
+      li {
+        margin-bottom: 14px;
+      }
+      code {
+        font-size: 0.9em;
+      }
+      p.note {
+        color: #555;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <h1>vue-pdf-embed lab</h1>
+    <p class="note">
+      Ways to render a PDF in a Vue app, compared. Findings live in
+      <code>ai-planning/vue-pdf-embed/findings.md</code>. Page weights are the real per-entry
+      totals from <code>node scripts/measure-entries.mjs</code>; this page itself ships no JS.
+    </p>
+
+    <ul>
+      <li>
+        <a data-testid="link-vue-pdf-embed" href="/vue-pdf-embed.html">vue-pdf-embed</a><br />
+        pdf.js under the hood. Full JS API: page count, text layer, annotations, smooth
+        scroll-to-page. <strong>821 KB gzip</strong>.
+      </li>
+      <li>
+        <a data-testid="link-embed-tag" href="/embed-tag.html">native <code>&lt;embed&gt;</code></a><br />
+        The browser's own viewer, via <code>&lt;embed&gt;</code> / <code>&lt;object&gt;</code> /
+        <code>&lt;iframe&gt;</code>. Free toolbar, but no JS API and no scroll-to-page without a
+        reload. <strong>27 KB gzip</strong> (Vue runtime only).
+      </li>
+      <li>
+        <a data-testid="link-pdfobject" href="/pdfobject.html">pdfobject-vue</a><br />
+        The native tag plus capability detection and a download-link fallback, same ceiling as
+        the native tag. <strong>28 KB gzip</strong>.
+      </li>
+    </ul>
+
   </body>
 </html>

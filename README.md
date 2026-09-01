@@ -2,6 +2,23 @@
 
 Minimal POC for [`vue-pdf-embed`](https://github.com/hrynko/vue-pdf-embed) (v2.1.6).
 
+## Pages
+
+`/` is a static index (no JS) linking to every experiment. Each experiment page opens with a card on the
+right saying what it evaluates and what the page weighs.
+
+| Route | What it evaluates | Page weight (gzip) |
+| --- | --- | --- |
+| `/vue-pdf-embed.html` | pdf.js via `vue-pdf-embed` (incl. form fill + save) | 821 KB |
+| `/embed-tag.html` | native `<embed>` / `<object>` / `<iframe>` | 27 KB |
+| `/pdfobject.html` | `pdfobject-vue` | 28 KB |
+
+Measure them yourself with `npm run measure` (builds, then walks the Vite manifest summing each entry's
+chunks and CSS). The pdf.js page is dominated by pdf.js; the two native pages are almost entirely the Vue
+runtime.
+
+## vue-pdf-embed page
+
 Split pane: PDF on the left, controls on the right. Pick a PDF with the file input and the whole document
 renders — one document at a time, picking another replaces it. The left pane scrolls freely; a static
 `<select>` of pages 1–10 scrolls the viewer to the chosen page; and every annotation found in the document
@@ -23,14 +40,25 @@ field). Regenerate with:
 ```bash
 node scripts/make-sample-pdf.mjs public/sample.pdf   "Document A" 8 a
 node scripts/make-sample-pdf.mjs public/sample-b.pdf "Document B" 4 b
+node scripts/make-form-pdf.mjs public/sample-form.pdf
 node scripts/make-annotated-pdf.mjs public/sample-annotated.pdf
 ```
 
-## Annotation probe
+## Native `<embed>` comparison
 
-`/annotations.html` (dev server) is a separate scratch page — pick a PDF and it dumps every annotation in
-the document as JSON. It uses the `usePdfDocument` composable plus pdf.js `getAnnotations()` per page, and
-is deliberately kept out of `App.vue` so the POC stays minimal.
+`/embed-tag.html` renders the same PDFs through the browser's built-in viewer (`<embed>` / `<object>` /
+`<iframe>` switch) instead of pdf.js. Zero bundle cost, free toolbar and thumbnails, `#page=N` works — but
+no JS API whatsoever: no page count, no annotations, no text. It also **cannot scroll to a page without
+reloading** — mutating the fragment on a live element is a silent no-op, and the plugin's scroll container
+is outside the DOM, so smooth scrolling is impossible. The "Navigate by" select in that page reproduces
+all three routes. See findings §12.
+
+## `pdfobject-vue` comparison
+
+`/pdfobject.html` renders the same PDFs through [`pdfobject-vue`](https://www.npmjs.com/package/pdfobject-vue)
+— the official Vue 3 wrapper around PDFObject. ~2.8 KB gzip, adds browser capability detection and a
+download-link fallback on top of the native tag, but has the same ceiling (no JS API, page changes
+re-embed). Note it re-embeds on *every* component update, not just when its props change. See findings §13.
 
 ## Safari
 
@@ -41,12 +69,8 @@ unsupported through 26.5). This is the workaround pdf.js maintainers point consu
 [mozilla/pdf.js#20973](https://github.com/mozilla/pdf.js/issues/20973). Costs +402 B gzip.
 
 Playwright cannot drive Safari, and its WebKit build *does* have the async iterator — so it does not catch
-this. Use `/safari-check.html` in real Safari; it mirrors its log into `document.title`:
-
-```bash
-open -a Safari "http://localhost:5177/safari-check.html"
-osascript -e 'tell application "Safari" to return name of front document'
-```
+this. Verify in real Safari by hand, or with the CI-runnable stand-in in the playground
+(`tests/browser-support.spec.ts` deletes the async iterator to reproduce the failure on any engine).
 
 ## How it works
 
