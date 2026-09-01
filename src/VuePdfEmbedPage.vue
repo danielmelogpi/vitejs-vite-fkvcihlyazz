@@ -122,6 +122,14 @@ const goToAnnotation = (annotation: FoundAnnotation) => {
     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+const scrollToMarker = () => {
+  page.value = marker.value.page
+
+  document
+    .querySelector('[data-testid="marker"]')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
 const goToPage = () => {
   document
     .getElementById(`${EMBED_ID}-${page.value}`)
@@ -187,9 +195,9 @@ const goToPage = () => {
           <li>Overlaying our own HTML on the page (try the highlight box)</li>
           <li>Safari support (needs a ReadableStream async-iterator polyfill)</li>
         </ul>
-        <p class="weight">
-          Page weight 823 KB gzip &mdash; <strong>the library adds ~797 KB</strong> over the
-          26 KB Vue baseline every page shares.
+        <p class="weight" data-testid="weight">
+          Downloads <strong>828 KB over 5 requests</strong> (built app, compressed).
+          The library accounts for ~797 KB of it; the shared Vue baseline is ~26 KB.
         </p>
       </div>
 
@@ -225,7 +233,13 @@ const goToPage = () => {
         />
       </label>
 
-      <MarkerControl v-model="marker" :max-page="numPages || 1" />
+      <MarkerControl v-model="marker" :max-page="numPages || 1">
+        <template #actions>
+          <button data-testid="scroll-to-marker" type="button" @click="scrollToMarker">
+            Scroll to marker
+          </button>
+        </template>
+      </MarkerControl>
 
       <label>
         Interactive form fields

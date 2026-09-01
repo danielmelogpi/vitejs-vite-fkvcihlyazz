@@ -156,9 +156,9 @@ onBeforeUnmount(revoke)
           <li><code>&lt;embed&gt;</code> vs <code>&lt;object&gt;</code> vs <code>&lt;iframe&gt;</code></li>
           <li>Whether an overlay can be injected and anchored (it can't follow scroll)</li>
         </ul>
-        <p class="weight">
-          Page weight 29 KB gzip &mdash; <strong>no library at all</strong>; the 2.5 KB beyond
-          the 26 KB shared Vue baseline is this page's own code.
+        <p class="weight" data-testid="weight">
+          Downloads <strong>31 KB over 5 requests</strong> (built app, compressed).
+          <strong>No PDF library at all</strong> &mdash; almost all of it is the shared Vue baseline.
         </p>
       </div>
 

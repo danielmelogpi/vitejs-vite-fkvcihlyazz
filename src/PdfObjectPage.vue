@@ -109,9 +109,9 @@ onBeforeUnmount(revoke)
           <li>Page selection through <code>pdfOpenParams</code></li>
           <li>Whether changing the page re-embeds (it does)</li>
         </ul>
-        <p class="weight">
-          Page weight 30 KB gzip &mdash; <strong>adds ~4 KB</strong> over the 26 KB shared Vue
-          baseline (pdfobject itself is ~2.4 KB of that).
+        <p class="weight" data-testid="weight">
+          Downloads <strong>33 KB over 5 requests</strong> (built app, compressed).
+          PDFObject adds ~4 KB over the shared Vue baseline.
         </p>
       </div>
 

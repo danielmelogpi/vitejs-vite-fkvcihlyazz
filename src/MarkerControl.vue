@@ -82,6 +82,8 @@ defineProps<{ maxPage: number; pageNote?: string }>()
         type="range"
       />
     </label>
+
+    <slot name="actions" />
   </fieldset>
 </template>
 
