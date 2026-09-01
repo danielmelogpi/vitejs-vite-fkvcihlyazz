@@ -32,6 +32,22 @@ node scripts/make-annotated-pdf.mjs public/sample-annotated.pdf
 the document as JSON. It uses the `usePdfDocument` composable plus pdf.js `getAnnotations()` per page, and
 is deliberately kept out of `App.vue` so the POC stays minimal.
 
+## Safari
+
+`main.ts` imports `@sec-ant/readable-stream/polyfill/asyncIterator` **before mounting**. Without it, Safari
+renders nothing whenever the text layer is on: pdf.js's `getTextContent()` iterates a `ReadableStream` with
+`for await`, and Safari has no `ReadableStream[Symbol.asyncIterator]` (desktop Safari gets it in 27; iOS is
+unsupported through 26.5). This is the workaround pdf.js maintainers point consumers to —
+[mozilla/pdf.js#20973](https://github.com/mozilla/pdf.js/issues/20973). Costs +402 B gzip.
+
+Playwright cannot drive Safari, and its WebKit build *does* have the async iterator — so it does not catch
+this. Use `/safari-check.html` in real Safari; it mirrors its log into `document.title`:
+
+```bash
+open -a Safari "http://localhost:5177/safari-check.html"
+osascript -e 'tell application "Safari" to return name of front document'
+```
+
 ## How it works
 
 - **Local file, no URL:** `await file.arrayBuffer()` → `new Uint8Array(buffer.slice(0))` assigned to the

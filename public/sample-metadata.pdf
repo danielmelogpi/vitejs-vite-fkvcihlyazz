@@ -1,0 +1,67 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R /AcroForm << /Fields [14 0 R] /DA (/Helv 0 Tf 0 g) /DR << /Font << /Helv 3 0 R >> >> >> >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /Helv 3 0 R >> >> /Contents 5 0 R /Annots [10 0 R 11 0 R 12 0 R 13 0 R] >>
+endobj
+5 0 obj
+<< /Length 153 >>
+stream
+BT /F1 20 Tf 72 692 Td (Metadata probe - Page 1 of 2) Tj ET
+BT /F1 11 Tf 72 662 Td (visible note at top-left; three more annotations are invisible) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /Helv 3 0 R >> >> /Contents 7 0 R /Annots [14 0 R] >>
+endobj
+7 0 obj
+<< /Length 129 >>
+stream
+BT /F1 20 Tf 72 692 Td (Metadata probe - Page 2 of 2) Tj ET
+BT /F1 11 Tf 72 662 Td (a hidden form field lives on this page) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Type /Annot /Subtype /Text /Rect [72 700 94 722] /Name /Comment /F 4 /NM (cl-anchor-001) /T (Backend) /Subj (payoff-line) /Contents (visible note) /CLID (payoff-123) /CLMeta << /kind (signature) /order 3 >> >>
+endobj
+11 0 obj
+<< /Type /Annot /Subtype /Text /Rect [200 700 222 722] /Name /Comment /F 2 /NM (cl-hidden-002) /T (Backend) /Contents (hidden payload: order=7 kind=wire-instructions) >>
+endobj
+12 0 obj
+<< /Type /Annot /Subtype /Text /Rect [300 700 322 722] /Name /Comment /F 32 /NM (cl-noview-003) /T (Backend) /Contents (noview payload) >>
+endobj
+13 0 obj
+<< /Type /Annot /Subtype /Square /Rect [400 700 400 700] /F 4 /NM (cl-zero-004) /T (Backend) /Contents (zero-size rect payload) >>
+endobj
+14 0 obj
+<< /Type /Annot /Subtype /Widget /FT /Tx /T (cl-field-005) /V (opaque-backend-id-42) /F 2 /Rect [72 600 320 625] /DA (/Helv 12 Tf 0 g) /P 6 0 R >>
+endobj
+xref
+0 15
+0000000000 65535 f 
+0000000009 00000 n 
+0000000146 00000 n 
+0000000209 00000 n 
+0000000279 00000 n 
+0000000455 00000 n 
+0000000659 00000 n 
+0000000814 00000 n 
+0000000000 65535 f 
+0000000000 65535 f 
+0000000994 00000 n 
+0000001224 00000 n 
+0000001410 00000 n 
+0000001565 00000 n 
+0000001712 00000 n 
+trailer
+<< /Size 15 /Root 1 0 R >>
+startxref
+1875
+%%EOF

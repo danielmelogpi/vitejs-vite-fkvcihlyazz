@@ -37,12 +37,15 @@ watch(doc, async (loaded) => {
   }
 
   const summaries: AnnotationSummary[] = []
+  const raw: Array<Record<string, unknown>> = []
 
   for (let pageNumber = 1; pageNumber <= loaded.numPages; pageNumber += 1) {
     const pdfPage = await loaded.getPage(pageNumber)
     const annotations = await pdfPage.getAnnotations()
 
     annotations.forEach((annotation) => {
+      raw.push({ __page: pageNumber, ...annotation })
+
       summaries.push({
         page: pageNumber,
         id: annotation.id,
@@ -61,5 +64,6 @@ watch(doc, async (loaded) => {
   const result = { numPages: loaded.numPages, count: summaries.length, summaries }
 
   ;(window as unknown as { __annotations?: unknown }).__annotations = result
+  ;(window as unknown as { __annotationsRaw?: unknown }).__annotationsRaw = raw
   out.textContent = JSON.stringify(result, null, 2)
 })

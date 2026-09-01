@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Safari check</title>
+    <style>
+      body { font: 14px -apple-system, sans-serif; margin: 12px; }
+      #log { font-family: ui-monospace, monospace; font-size: 12px; white-space: pre-wrap;
+             background: #f4f4f4; padding: 8px; max-height: 45vh; overflow: auto; }
+      .bad { color: #b00; font-weight: 700; }
+      .good { color: #060; font-weight: 700; }
+      #viewer { border: 1px solid #ccc; height: 300px; overflow: auto; margin-top: 8px; }
+    </style>
+  </head>
+  <body>
+    <h3 id="verdict">running…</h3>
+    <div id="log"></div>
+    <div id="viewer"></div>
+    <script type="module" src="/src/safari-check.ts"></script>
+  </body>
+</html>

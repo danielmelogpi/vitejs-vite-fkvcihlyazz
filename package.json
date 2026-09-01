@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sec-ant/readable-stream": "^0.7.0",
     "vue": "^3.5.41",
     "vue-pdf-embed": "^2.1.6"
   },
