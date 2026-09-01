@@ -2,6 +2,7 @@
 import { ref, shallowRef, useTemplateRef } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
+import MarkerControl, { type Marker } from './MarkerControl.vue'
 
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
 import 'vue-pdf-embed/dist/styles/textLayer.css'
@@ -24,12 +25,7 @@ const highlight = ref('')
 const highlightBoxes = ref<Record<number, Array<{ x: number; y: number; w: number; h: number }>>>({})
 const annotations = ref<FoundAnnotation[]>([])
 const numPages = ref(0)
-const markerText = ref('sign here')
-const markerPage = ref(1)
-const markerX = ref(20)
-const markerY = ref(30)
-const markerW = ref(30)
-const markerH = ref(6)
+const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
 
 
 const onFileInput = async (event: Event) => {
@@ -83,8 +79,8 @@ const onRendered = () => {
 const onLoaded = async (doc: PDFDocumentProxy) => {
   numPages.value = doc.numPages
 
-  if (markerPage.value > doc.numPages) {
-    markerPage.value = 1
+  if (marker.value.page > doc.numPages) {
+    marker.value.page = 1
   }
 
   const found: FoundAnnotation[] = []
@@ -150,17 +146,17 @@ const goToPage = () => {
       >
         <template #after-page="{ page: pageNumber }">
           <div
-            v-if="markerText && pageNumber === markerPage"
+            v-if="marker.text && pageNumber === marker.page"
             class="marker"
             data-testid="marker"
             :style="{
-              left: `${markerX}%`,
-              top: `${markerY}%`,
-              width: `${markerW}%`,
-              height: `${markerH}%`,
+              left: `${marker.x}%`,
+              top: `${marker.y}%`,
+              width: `${marker.w}%`,
+              height: `${marker.h}%`,
             }"
           >
-            {{ markerText }}
+            {{ marker.text }}
           </div>
           <div
             v-for="(box, index) in highlightBoxes[pageNumber] ?? []"
@@ -191,7 +187,10 @@ const goToPage = () => {
           <li>Overlaying our own HTML on the page (try the highlight box)</li>
           <li>Safari support (needs a ReadableStream async-iterator polyfill)</li>
         </ul>
-        <p class="weight">Page weight: 821 KB gzip.</p>
+        <p class="weight">
+          Page weight 823 KB gzip &mdash; <strong>the library adds ~797 KB</strong> over the
+          26 KB Vue baseline every page shares.
+        </p>
       </div>
 
       <label>
@@ -226,74 +225,7 @@ const goToPage = () => {
         />
       </label>
 
-      <fieldset class="marker-control">
-        <legend>Place a marker</legend>
-
-        <label>
-          Text
-          <input v-model="markerText" data-testid="marker-text" type="text" />
-        </label>
-
-        <label>
-          Page <output data-testid="marker-page-value">{{ markerPage }}</output>
-          <input
-            v-model.number="markerPage"
-            data-testid="marker-page"
-            :max="numPages || 1"
-            min="1"
-            step="1"
-            type="range"
-          />
-        </label>
-
-        <label>
-          X <output data-testid="marker-x-value">{{ markerX }}%</output>
-          <input
-            v-model.number="markerX"
-            data-testid="marker-x"
-            max="100"
-            min="0"
-            step="1"
-            type="range"
-          />
-        </label>
-
-        <label>
-          Y <output data-testid="marker-y-value">{{ markerY }}%</output>
-          <input
-            v-model.number="markerY"
-            data-testid="marker-y"
-            max="100"
-            min="0"
-            step="1"
-            type="range"
-          />
-        </label>
-
-        <label>
-          W <output data-testid="marker-w-value">{{ markerW }}%</output>
-          <input
-            v-model.number="markerW"
-            data-testid="marker-w"
-            max="100"
-            min="1"
-            step="1"
-            type="range"
-          />
-        </label>
-
-        <label>
-          H <output data-testid="marker-h-value">{{ markerH }}%</output>
-          <input
-            v-model.number="markerH"
-            data-testid="marker-h"
-            max="100"
-            min="1"
-            step="1"
-            type="range"
-          />
-        </label>
-      </fieldset>
+      <MarkerControl v-model="marker" :max-page="numPages || 1" />
 
       <label>
         Interactive form fields
@@ -378,24 +310,6 @@ body {
   pointer-events: none;
 }
 
-.marker-control {
-  margin-bottom: 10px;
-  padding: 6px 10px 10px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-}
-
-.marker-control legend {
-  padding: 0 4px;
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.marker-control input[type='range'] {
-  width: 160px;
-  vertical-align: middle;
-}
 
 .hl {
   position: absolute;

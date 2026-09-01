@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import MarkerControl, { type Marker } from './MarkerControl.vue'
 
 type TagName = 'embed' | 'object' | 'iframe'
 type NavMode = 'remount' | 'fragment' | 'hash'
@@ -12,6 +13,7 @@ const mode = ref<NavMode>('fragment')
 const remountKey = ref(0)
 const loadCount = ref(0)
 const log = ref<string[]>([])
+const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
 const host = useTemplateRef<HTMLElement>('host')
 
 const say = (message: string) => {
@@ -99,6 +101,19 @@ onBeforeUnmount(revoke)
 <template>
   <div class="lab">
     <section ref="host" class="pane viewer" data-testid="viewer">
+      <div
+        v-if="marker.text && src"
+        class="marker"
+        data-testid="marker"
+        :style="{
+          left: `${marker.x}%`,
+          top: `${marker.y}%`,
+          width: `${marker.w}%`,
+          height: `${marker.h}%`,
+        }"
+      >
+        {{ marker.text }}
+      </div>
       <template v-if="src">
         <embed
           v-if="tag === 'embed'"
@@ -141,7 +156,10 @@ onBeforeUnmount(revoke)
           <li><code>&lt;embed&gt;</code> vs <code>&lt;object&gt;</code> vs <code>&lt;iframe&gt;</code></li>
           <li>Whether an overlay can be injected and anchored (it can't follow scroll)</li>
         </ul>
-        <p class="weight">Page weight: 27 KB gzip (Vue runtime only).</p>
+        <p class="weight">
+          Page weight 29 KB gzip &mdash; <strong>no library at all</strong>; the 2.5 KB beyond
+          the 26 KB shared Vue baseline is this page's own code.
+        </p>
       </div>
 
       <label>
@@ -171,6 +189,12 @@ onBeforeUnmount(revoke)
           <option value="remount">remount element</option>
         </select>
       </label>
+
+      <MarkerControl
+        v-model="marker"
+        :max-page="10"
+        page-note="no effect: the tag exposes no page or scroll position"
+      />
 
       <label>
         Page
@@ -208,8 +232,23 @@ body {
 }
 
 .viewer {
+  position: relative;
   border-right: 1px solid #ccc;
 }
+
+.marker {
+  position: absolute;
+  z-index: 5;
+  box-sizing: border-box;
+  padding: 2px 6px;
+  border: 1px solid rgba(0, 90, 200, 0.9);
+  border-radius: 3px;
+  background: rgba(0, 120, 255, 0.25);
+  font-size: 12px;
+  overflow: hidden;
+  pointer-events: none;
+}
+
 
 embed,
 object,

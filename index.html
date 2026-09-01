@@ -27,26 +27,27 @@
     <h1>vue-pdf-embed lab</h1>
     <p class="note">
       Ways to render a PDF in a Vue app, compared. Findings live in
-      <code>ai-planning/vue-pdf-embed/findings.md</code>. Page weights are the real per-entry
-      totals from <code>node scripts/measure-entries.mjs</code>; this page itself ships no JS.
+      <code>ai-planning/vue-pdf-embed/findings.md</code>. Weights are real per-entry totals from
+      <code>npm run measure</code>; &ldquo;adds&rdquo; is what each option contributes on top of the
+      26 KB gzip Vue baseline every page shares. This page itself ships no JS.
     </p>
 
     <ul>
       <li>
         <a data-testid="link-vue-pdf-embed" href="/vue-pdf-embed.html">vue-pdf-embed</a><br />
         pdf.js under the hood. Full JS API: page count, text layer, annotations, smooth
-        scroll-to-page. <strong>821 KB gzip</strong>.
+        scroll-to-page. 823 KB gzip &mdash; <strong>adds ~797 KB</strong>.
       </li>
       <li>
         <a data-testid="link-embed-tag" href="/embed-tag.html">native <code>&lt;embed&gt;</code></a><br />
         The browser's own viewer, via <code>&lt;embed&gt;</code> / <code>&lt;object&gt;</code> /
         <code>&lt;iframe&gt;</code>. Free toolbar, but no JS API and no scroll-to-page without a
-        reload. <strong>27 KB gzip</strong> (Vue runtime only).
+        reload. 29 KB gzip &mdash; <strong>adds nothing</strong> (no library).
       </li>
       <li>
         <a data-testid="link-pdfobject" href="/pdfobject.html">pdfobject-vue</a><br />
         The native tag plus capability detection and a download-link fallback, same ceiling as
-        the native tag. <strong>28 KB gzip</strong>.
+        the native tag. 30 KB gzip &mdash; <strong>adds ~4 KB</strong>.
       </li>
     </ul>
 

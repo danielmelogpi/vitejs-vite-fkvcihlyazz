@@ -27,11 +27,9 @@ const sizeOf = (file) => {
 
 const kb = (n) => `${(n / 1024).toFixed(1)} KB`
 
-const rows = []
+const entries = Object.entries(manifest).filter(([, chunk]) => chunk.isEntry)
 
-for (const [key, chunk] of Object.entries(manifest)) {
-  if (!chunk.isEntry) continue
-
+const filesFor = (key) => {
   const files = new Set()
   for (const dep of collect(key)) {
     const entry = manifest[dep]
@@ -39,7 +37,19 @@ for (const [key, chunk] of Object.entries(manifest)) {
     files.add(entry.file)
     for (const css of entry.css ?? []) files.add(css)
   }
+  return files
+}
 
+const perEntry = entries.map(([key]) => ({ key, files: filesFor(key) }))
+
+// files every entry loads = the shared baseline (Vue runtime etc.)
+const shared = new Set(
+  [...(perEntry[0]?.files ?? [])].filter((file) =>
+    perEntry.every(({ files }) => files.has(file)),
+  ),
+)
+
+const sum = (files) => {
   let raw = 0
   let gzip = 0
   for (const file of files) {
@@ -47,18 +57,28 @@ for (const [key, chunk] of Object.entries(manifest)) {
     raw += size.raw
     gzip += size.gzip
   }
-
-  rows.push({ page: key.replace(/\.html$/, ''), files: files.size, raw, gzip })
+  return { raw, gzip }
 }
 
-rows.sort((a, b) => b.gzip - a.gzip)
+const baseline = sum(shared)
+
+const rows = perEntry.map(({ key, files }) => {
+  const total = sum(files)
+  const exclusive = sum([...files].filter((file) => !shared.has(file)))
+  return { page: key.replace(/\.html$/, ''), total, exclusive }
+})
+
+rows.sort((a, b) => b.exclusive.gzip - a.exclusive.gzip)
 
 console.log(
-  `${'page'.padEnd(16)}${'files'.padStart(6)}${'raw'.padStart(13)}${'gzip'.padStart(12)}`,
+  `shared baseline (loaded by every page): ${kb(baseline.raw)} raw / ${kb(baseline.gzip)} gzip\n`,
+)
+console.log(
+  `${'page'.padEnd(16)}${'total raw'.padStart(13)}${'total gzip'.padStart(12)}${'adds gzip'.padStart(12)}`,
 )
 for (const row of rows) {
   console.log(
-    `${row.page.padEnd(16)}${String(row.files).padStart(6)}${kb(row.raw).padStart(13)}${kb(row.gzip).padStart(12)}`,
+    `${row.page.padEnd(16)}${kb(row.total.raw).padStart(13)}${kb(row.total.gzip).padStart(12)}${kb(row.exclusive.gzip).padStart(12)}`,
   )
 }
 

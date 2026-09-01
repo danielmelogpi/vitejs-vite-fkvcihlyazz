@@ -1,6 +1,6 @@
 import '@sec-ant/readable-stream/polyfill/asyncIterator'
 
 import { createApp } from 'vue'
-import App from './App.vue'
+import VuePdfEmbedPage from './VuePdfEmbedPage.vue'
 
-createApp(App).mount('#app')
+createApp(VuePdfEmbedPage).mount('#app')
