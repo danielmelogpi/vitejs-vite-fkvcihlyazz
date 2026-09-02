@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, shallowRef, useTemplateRef } from 'vue'
+import { computed, ref, shallowRef, useTemplateRef } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import MarkerControl, { type Marker } from './MarkerControl.vue'
+import { parseField, type ParsedField } from './ocrFields'
 
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
 import 'vue-pdf-embed/dist/styles/textLayer.css'
@@ -26,6 +27,48 @@ const highlightBoxes = ref<Record<number, Array<{ x: number; y: number; w: numbe
 const annotations = ref<FoundAnnotation[]>([])
 const numPages = ref(0)
 const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
+
+type OcrEntry = { id: number; raw: string; parsed: ParsedField }
+
+let ocrSeq = 0
+
+const newEntry = (): OcrEntry => {
+  ocrSeq += 1
+
+  return { id: ocrSeq, raw: '', parsed: parseField('') }
+}
+
+const ocrEntries = ref<OcrEntry[]>([newEntry()])
+
+type OcrBox = { id: number; label: string; box: NonNullable<ParsedField['box']> }
+
+const ocrBoxesByPage = computed(() => {
+  const byPage: Record<number, OcrBox[]> = {}
+
+  ocrEntries.value.forEach((entry) => {
+    const { box, page, label } = entry.parsed
+
+    if (!box || !page) {
+      return
+    }
+
+    byPage[page] = [...(byPage[page] ?? []), { id: entry.id, label, box }]
+  })
+
+  return byPage
+})
+
+const onOcrInput = (entry: OcrEntry) => {
+  entry.parsed = parseField(entry.raw)
+}
+
+const addOcrEntry = () => {
+  ocrEntries.value.push(newEntry())
+}
+
+const removeOcrEntry = (id: number) => {
+  ocrEntries.value = ocrEntries.value.filter((entry) => entry.id !== id)
+}
 
 
 const onFileInput = async (event: Event) => {
@@ -166,6 +209,21 @@ const goToPage = () => {
           >
             {{ marker.text }}
           </div>
+
+          <div
+            v-for="field in ocrBoxesByPage[pageNumber] ?? []"
+            :key="field.id"
+            class="ocr-box"
+            :data-testid="`ocr-box-${field.id}`"
+            :style="{
+              left: `${field.box.x}%`,
+              top: `${field.box.y}%`,
+              width: `${field.box.w}%`,
+              height: `${field.box.h}%`,
+            }"
+          >
+            <span class="ocr-label">{{ field.label }}</span>
+          </div>
           <div
             v-for="(box, index) in highlightBoxes[pageNumber] ?? []"
             :key="index"
@@ -193,6 +251,7 @@ const goToPage = () => {
           <li>Reading annotations and navigating to one</li>
           <li>Filling form fields and saving the edited bytes back</li>
           <li>Overlaying our own HTML on the page (try the highlight box)</li>
+          <li>Drawing Document AI OCR fields from pasted <code>normalizedVertices</code></li>
           <li>Safari support (needs a ReadableStream async-iterator polyfill)</li>
         </ul>
         <p class="weight" data-testid="weight">
@@ -240,6 +299,53 @@ const goToPage = () => {
           </button>
         </template>
       </MarkerControl>
+
+      <fieldset class="ocr">
+        <legend>Document AI fields</legend>
+        <p class="hint">
+          Paste an entity, a <code>pageAnchor</code>, or just a
+          <code>normalizedVertices</code> array. <code>page</code> is read as Document AI's
+          0-based index, so <code>"page": "12"</code> resolves to page 13; an absent
+          <code>page</code> means index 0 (protobuf omits zeroes), so page 1. Same for a missing
+          <code>x</code> or <code>y</code>.
+        </p>
+
+        <div v-for="entry in ocrEntries" :key="entry.id" class="ocr-entry">
+          <textarea
+            v-model="entry.raw"
+            :data-testid="`ocr-input-${entry.id}`"
+            placeholder='"normalizedVertices": [{ "x": 0.19, "y": 0.58 }, ...]'
+            rows="4"
+            @input="onOcrInput(entry)"
+          />
+
+          <p class="ocr-status" :data-testid="`ocr-status-${entry.id}`">
+            <template v-if="entry.parsed.error">
+              <span class="bad">{{ entry.parsed.error }}</span>
+            </template>
+            <template v-else-if="entry.parsed.box">
+              <strong>{{ entry.parsed.label }}</strong> &middot; page
+              {{ entry.parsed.page }} &middot; {{ entry.parsed.vertices }} vertices &middot;
+              {{ entry.parsed.box.x.toFixed(1) }}%, {{ entry.parsed.box.y.toFixed(1) }}% &middot;
+              {{ entry.parsed.box.w.toFixed(1) }}&times;{{ entry.parsed.box.h.toFixed(1) }}%
+              <span v-if="numPages && (entry.parsed.page ?? 0) > numPages" class="bad">
+                — beyond this document ({{ numPages }} pages)
+              </span>
+            </template>
+            <template v-else>waiting for JSON</template>
+          </p>
+
+          <button
+            :data-testid="`ocr-remove-${entry.id}`"
+            type="button"
+            @click="removeOcrEntry(entry.id)"
+          >
+            Remove
+          </button>
+        </div>
+
+        <button data-testid="ocr-add" type="button" @click="addOcrEntry">Add marker</button>
+      </fieldset>
 
       <label>
         Interactive form fields
@@ -324,6 +430,69 @@ body {
   pointer-events: none;
 }
 
+
+.ocr-box {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  border: 2px solid rgba(200, 0, 120, 0.9);
+  background: rgba(255, 0, 140, 0.18);
+  pointer-events: none;
+}
+
+.ocr-label {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  background: rgba(200, 0, 120, 0.9);
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+
+.ocr {
+  margin-bottom: 10px;
+  padding: 6px 10px 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.ocr legend {
+  padding: 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.ocr .hint {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: #555;
+}
+
+.ocr-entry {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #ddd;
+}
+
+.ocr-entry textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.ocr-status {
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.ocr-status .bad {
+  color: #b00;
+}
 
 .hl {
   position: absolute;
