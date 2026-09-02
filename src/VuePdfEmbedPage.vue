@@ -26,6 +26,14 @@ const highlight = ref('')
 const highlightBoxes = ref<Record<number, Array<{ x: number; y: number; w: number; h: number }>>>({})
 const annotations = ref<FoundAnnotation[]>([])
 const numPages = ref(0)
+const zoom = ref(100)
+const sharpness = ref(1)
+const baseWidth = ref(0)
+const viewer = useTemplateRef<HTMLElement>('viewer')
+
+const zoomedWidth = computed(() =>
+  baseWidth.value ? Math.round((baseWidth.value * zoom.value) / 100) : undefined,
+)
 const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
 
 type OcrEntry = { id: number; raw: string; parsed: ParsedField }
@@ -122,6 +130,10 @@ const onRendered = () => {
 const onLoaded = async (doc: PDFDocumentProxy) => {
   numPages.value = doc.numPages
 
+  if (!baseWidth.value && viewer.value) {
+    baseWidth.value = viewer.value.clientWidth - 24
+  }
+
   if (marker.value.page > doc.numPages) {
     marker.value.page = 1
   }
@@ -182,12 +194,14 @@ const goToPage = () => {
 
 <template>
   <div class="lab">
-    <section class="pane viewer" data-testid="viewer">
+    <section ref="viewer" class="pane viewer" data-testid="viewer">
       <VuePdfEmbed
         v-if="source"
         :id="EMBED_ID"
         ref="embed"
         :forms="forms"
+        :scale="sharpness"
+        :width="zoomedWidth"
         image-resources-path="/annotation-icons/"
         text-layer
         :source="source"
@@ -252,6 +266,7 @@ const goToPage = () => {
           <li>Filling form fields and saving the edited bytes back</li>
           <li>Overlaying our own HTML on the page (try the highlight box)</li>
           <li>Drawing Document AI OCR fields from pasted <code>normalizedVertices</code></li>
+          <li>Custom zoom via <code>width</code> (and <code>scale</code> for canvas sharpness)</li>
           <li>Safari support (needs a ReadableStream async-iterator polyfill)</li>
         </ul>
         <p class="weight" data-testid="weight">
@@ -279,6 +294,30 @@ const goToPage = () => {
       <label>
         Enable annotation layer
         <input type="checkbox" value="true" v-model="annotationLayer" />
+      </label>
+
+      <label>
+        Zoom <output data-testid="zoom-value">{{ zoom }}%</output>
+        <input
+          v-model.number="zoom"
+          data-testid="zoom"
+          max="300"
+          min="50"
+          step="10"
+          type="range"
+        />
+      </label>
+
+      <label>
+        Canvas sharpness <output data-testid="sharpness-value">{{ sharpness }}x</output>
+        <input
+          v-model.number="sharpness"
+          data-testid="sharpness"
+          max="3"
+          min="1"
+          step="1"
+          type="range"
+        />
       </label>
 
       <label>
