@@ -103,6 +103,72 @@
               download link instead of a blank box.
             </td>
           </tr>
+          <tr>
+            <th>Browsers supported (the range)</th>
+            <td>
+              <span class="mark warn">⚠️ Safari 16.4+ · Chrome/Edge 107+ · Firefox 104+</span>
+              Floor set by a class static block in pdf.js's legacy build (Safari 16.4). Safari of
+              <em>any</em> version additionally needs the polyfill below.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Safari 17.4+ · Chrome/Edge 119+ · Firefox 121+</span>
+              Higher floor: the modern build needs <code>Promise.withResolvers</code> natively.
+              Importing pdf.js's legacy build instead drops it back to Safari 16.4, at a bytes cost.
+            </td>
+            <td>
+              <span class="mark yes">✅ Bounded by our own build, not the library</span>
+              The writer is plain ES and needs nothing modern, so the range is whatever our app
+              targets: Safari 16+ · Chrome/Edge 107+ · Firefox 104+. Display needs a browser with a
+              PDF viewer.
+            </td>
+            <td>
+              <span class="mark yes">✅ Bounded by our own build, not the library</span>
+              Same as annotpdf — our Vite target is the constraint, not pdf-lib.
+            </td>
+            <td>
+              <span class="mark yes">✅ Anything with a PDF viewer</span>
+              No library to gate it. The catch is the opposite: a browser <em>without</em> an
+              inline viewer shows a blank frame.
+            </td>
+            <td>
+              <span class="mark yes">✅ Anything, and it degrades</span>
+              Same range, but it detects a missing viewer and offers a download link instead.
+            </td>
+          </tr>
+          <tr>
+            <th>Polyfills needed</th>
+            <td>
+              <span class="mark warn">⚠️ One, and it is mandatory</span>
+              <code>@sec-ant/readable-stream</code> (+402&nbsp;B gzip) — without it Safari renders
+              <strong>nothing</strong> at any version, because the text layer iterates a
+              <code>ReadableStream</code>. ES built-ins are already covered by the core-js inside
+              pdf.js's legacy build.
+            </td>
+            <td>
+              <span class="mark yes">✅ None on Safari 17.4+</span>
+              Never touches the text layer, so the ReadableStream gap does not apply (verified by
+              deleting it). Below 17.4 it needs <code>Promise.withResolvers</code> — the modern
+              build ships no polyfills at all.
+            </td>
+            <td>
+              <span class="mark yes">✅ None</span>
+              But it imports Node's <code>fs</code>, so the <em>bundler</em> must stub or alias it —
+              Vite did so silently, esbuild needed <code>--external:fs</code>. A build config
+              detail, not a polyfill.
+            </td>
+            <td>
+              <span class="mark yes">✅ None</span>
+              Nothing missing in any browser we target.
+            </td>
+            <td>
+              <span class="mark yes">✅ None</span>
+              No library ships, so there is nothing to polyfill.
+            </td>
+            <td>
+              <span class="mark yes">✅ None</span>
+              Same.
+            </td>
+          </tr>
 
           <tr>
             <th>Render / processing time</th>
