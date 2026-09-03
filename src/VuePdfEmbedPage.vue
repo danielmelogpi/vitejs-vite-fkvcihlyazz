@@ -3,6 +3,7 @@ import { computed, ref, shallowRef, useTemplateRef } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
 import MarkerControl, { type Marker } from './MarkerControl.vue'
+import DependencyList, { type Dependency } from './DependencyList.vue'
 import { parseField, type ParsedField } from './ocrFields'
 
 import 'vue-pdf-embed/dist/styles/annotationLayer.css'
@@ -190,11 +191,44 @@ const goToPage = () => {
     .getElementById(`${EMBED_ID}-${page.value}`)
     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
+
+const deps: Dependency[] = [
+  {
+    name: 'vue-pdf-embed',
+    version: '2.1.6',
+    license: 'MIT',
+    url: 'https://www.npmjs.com/package/vue-pdf-embed',
+    size: '6 KB gzip on its own',
+    updated: '2026-08-25 (2.1.6)',
+    note:
+      'The Vue wrapper. Tiny by itself — its default entry is what pulls pdf.js in, worker and all.',
+  },
+  {
+    name: 'pdfjs-dist',
+    version: '6.2.108',
+    license: 'Apache-2.0',
+    url: 'https://www.npmjs.com/package/pdfjs-dist',
+    size: '~797 KB gzip of the page',
+    updated: '2026-08-29 (6.3.289; we pin 6.2.108)',
+    note:
+      "Mozilla's renderer, and essentially the whole cost. 34 MB installed, declares Node >= 22.13, and pulls an optional native canvas binary.",
+  },
+  {
+    name: '@sec-ant/readable-stream',
+    version: '0.7.0',
+    license: 'MIT',
+    url: 'https://www.npmjs.com/package/@sec-ant/readable-stream',
+    size: '+402 B gzip',
+    updated: '2026-05-04 (0.7.0)',
+    note:
+      'Safari polyfill. Without it the text layer throws and nothing renders at all — the pdf.js maintainers point consumers here.',
+  },
+]
 </script>
 
 <template>
   <div class="lab">
-    <section ref="viewer" class="pane viewer" data-testid="viewer">
+    <section ref="viewer" class="pane viewer" data-testid="viewer" style="background: gray;">
       <VuePdfEmbed
         v-if="source"
         :id="EMBED_ID"
@@ -422,6 +456,7 @@ const goToPage = () => {
           </li>
         </ul>
       </section>
+      <DependencyList added="+800 KB gzip" :deps="deps" download="831 KB over 6 requests" />
     </section>
   </div>
 </template>

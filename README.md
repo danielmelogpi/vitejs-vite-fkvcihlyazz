@@ -9,9 +9,12 @@ right saying what it evaluates and what the page weighs.
 
 | Route | What it evaluates | Page weight (gzip) |
 | --- | --- | --- |
+| `/matrix.html` | decision matrix: every aspect scored across the three | static, no JS |
 | `/vue-pdf-embed.html` | pdf.js via `vue-pdf-embed` (incl. form fill + save) | 821 KB |
 | `/embed-tag.html` | native `<embed>` / `<object>` / `<iframe>` | 27 KB |
 | `/pdfobject.html` | `pdfobject-vue` | 28 KB |
+| `/canvas.html` | pdf.js core onto our own canvases, lazily | 155 KB + 470 KB worker |
+| `/annotate-native.html` | `annotpdf` writes annotations, native viewer draws them | 84 KB |
 
 Measure them yourself with `npm run measure` (builds, then walks the Vite manifest summing each entry's
 chunks and CSS). The pdf.js page is dominated by pdf.js; the two native pages are almost entirely the Vue

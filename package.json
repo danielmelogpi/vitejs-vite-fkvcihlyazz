@@ -10,6 +10,7 @@
     "measure": "npm run build && node scripts/measure-entries.mjs"
   },
   "dependencies": {
+    "@digital-blueprint/annotpdf": "^1.0.13-a",
     "@sec-ant/readable-stream": "^0.7.0",
     "pdfobject-vue": "^0.0.5",
     "vue": "^3.5.41",

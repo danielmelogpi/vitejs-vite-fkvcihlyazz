@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } f
 import { PdfObject } from 'pdfobject-vue'
 import PDFObject from 'pdfobject'
 import MarkerControl, { type Marker } from './MarkerControl.vue'
+import DependencyList, { type Dependency } from './DependencyList.vue'
 
 const objectUrl = ref('')
 const page = ref(1)
@@ -78,6 +79,29 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(revoke)
+
+const deps: Dependency[] = [
+  {
+    name: 'pdfobject-vue',
+    version: '0.0.5',
+    license: 'MIT',
+    url: 'https://www.npmjs.com/package/pdfobject-vue',
+    size: '382 B gzip',
+    updated: '2025-10-30 (0.0.5)',
+    note:
+      'Official Vue 3 wrapper — twelve lines that call PDFObject on mount and on every update.',
+  },
+  {
+    name: 'pdfobject',
+    version: '2.3.1',
+    license: 'MIT',
+    url: 'https://www.npmjs.com/package/pdfobject',
+    size: '2.4 KB gzip',
+    updated: '2025-02-13 (2.3.1)',
+    note:
+      'Detects whether the browser can display PDFs, picks the tag, and falls back to a download link.',
+  },
+]
 </script>
 
 <template>
@@ -146,6 +170,7 @@ onBeforeUnmount(revoke)
       <ul data-testid="log">
         <li v-for="entry in log" :key="entry">{{ entry }}</li>
       </ul>
+      <DependencyList added="+5 KB gzip" :deps="deps" download="34 KB over 6 requests" />
     </section>
   </div>
 </template>

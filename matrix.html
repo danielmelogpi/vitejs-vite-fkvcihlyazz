@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF approach matrix</title>
+    <style>
+      body {
+        margin: 0 auto;
+        padding: 24px;
+        max-width: 78rem;
+        font: 14px/1.45 -apple-system, system-ui, sans-serif;
+        color: #1a1a1a;
+      }
+      h1 { margin: 0 0 4px; font-size: 22px; }
+      p.lead { margin: 0 0 18px; color: #555; }
+      .scroll { max-height: calc(100vh - 150px); overflow: auto; }
+      table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 60rem; }
+      th, td { border-right: 1px solid #d8d8d8; border-bottom: 1px solid #d8d8d8; padding: 8px 10px; vertical-align: top; text-align: left; }
+      tbody tr:first-child th, tbody tr:first-child td { border-top: 1px solid #d8d8d8; }
+      th:first-child, td:first-child { border-left: 1px solid #d8d8d8; }
+      thead th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: #f2f2f4;
+        font-size: 13px;
+        box-shadow: inset 0 -1px 0 #c9c9cf;
+      }
+      tbody th { background: #fafafa; width: 12rem; font-weight: 600; }
+      td { font-size: 13px; }
+      .yes { color: #0a7a2f; font-weight: 700; }
+      .no { color: #b00020; font-weight: 700; }
+      .warn { color: #9a6700; font-weight: 700; }
+      .na { color: #777; font-weight: 700; }
+      .mark { display: block; margin-bottom: 2px; }
+      tr.out td, tr.out th { background: #f7f7f7; color: #777; }
+      tr.section th { position: static; background: #e8e8ec; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+      tbody th.sub { padding-left: 22px; font-weight: 500; }
+      code { font-size: 0.92em; background: #f2f2f4; padding: 0 3px; border-radius: 3px; }
+      .legend { margin: 14px 0 0; font-size: 13px; color: #555; }
+      .legend span { margin-right: 14px; }
+      footer { margin-top: 22px; font-size: 13px; color: #555; }
+      a { color: #0645ad; }
+    </style>
+  </head>
+  <body>
+    <h1>PDF approach matrix</h1>
+    <p class="lead">
+      Five ways to show a PDF in our Vue app, scored on what Product and engineering actually
+      have to decide. Every claim here was measured in this lab &mdash; details and evidence in
+      <code>ai-planning/vue-pdf-embed/findings.md</code>.
+    </p>
+
+    <div class="scroll">
+      <table data-testid="matrix">
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th><a href="/vue-pdf-embed.html">vue-pdf-embed</a> (pdf.js)</th>
+            <th><a href="/canvas.html">pure canvas</a> (pdf.js core)</th>
+            <th><a href="/annotate-native.html">annotpdf</a> → native</th>
+            <th><a href="/embed-tag.html">native <code>&lt;embed&gt;</code></a></th>
+            <th><a href="/pdfobject.html">pdfobject-vue</a></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>Browser compatibility &amp; consistency</th>
+            <td>
+              <span class="mark warn">⚠️ Consistent, with a caveat</span>
+              We draw the pages, so every browser shows identical pixels. But Safari renders
+              <em>nothing</em> without a polyfill, and the floor is Safari 16.4+.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Consistent, higher floor</span>
+              We draw the pages, so identical pixels everywhere. On the modern build the floor is
+              Safari 17.4+ (no polyfills bundled); the legacy build buys 16.4 back at a bytes cost.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Whatever the browser shows</span>
+              Writing the annotation works everywhere; displaying it is the browser's viewer again,
+              so the same "looks different everywhere" caveat.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Works everywhere, looks different everywhere</span>
+              Every browser ships its own viewer and toolbar. "Consistent" is exactly what you
+              don't get. Some environments have no PDF plugin at all and show a blank frame.
+            </td>
+            <td>
+              <span class="mark yes">✅ Same, but degrades honestly</span>
+              Same viewers as native, plus it detects "this browser can't show PDFs" and renders a
+              download link instead of a blank box.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Render / processing time</th>
+            <td>
+              <span class="mark warn">⚠️ Fast now, scales badly</span>
+              122&nbsp;ms to draw all 8 pages of our tiny fixture &mdash; but it rasterises
+              <em>every</em> page up front in JS. A long scanned document will cost far more until
+              we add lazy rendering.
+            </td>
+            <td>
+              <span class="mark yes">✅ Best of both</span>
+              Only pages you actually look at are drawn &mdash; measured 2 of 8 on load, 4 of 8
+              after scrolling to the end. Long documents stay cheap.
+            </td>
+            <td>
+              <span class="mark yes">✅ Native speed plus a one-off</span>
+              Rewriting the bytes took milliseconds on our fixture, then the browser renders
+              natively and lazily. Bake cost grows with file size.
+            </td>
+            <td>
+              <span class="mark yes">✅ Effectively free</span>
+              ~185&nbsp;ms to hand the file over, then the browser draws pages natively, lazily, as
+              you scroll. Page count barely matters.
+            </td>
+            <td>
+              <span class="mark yes">✅ Same as native</span>
+              ~157&nbsp;ms. Identical engine; the wrapper adds nothing measurable.
+            </td>
+          </tr>
+
+          <tr class="out" data-testid="row-mobile">
+            <th>Mobile friendliness</th>
+            <td colspan="5">
+              <span class="mark na">❌ Out of scope</span>
+              Decided on Aug&nbsp;31 not to handle mobile scenarios here. Not evaluated for any
+              approach.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Highlighting individual fields as the user selects them</th>
+            <td>
+              <span class="mark yes">✅ Yes &mdash; this is the reason to pay for it</span>
+              Our own HTML boxes sit on the page, measured 0&nbsp;px off the target text. They're
+              normal DOM, so hover, click and selection are ordinary Vue.
+            </td>
+            <td>
+              <span class="mark yes">✅ Identical</span>
+              Same overlay technique, same accuracy &mdash; the wrapper was never doing this part
+              for us.
+            </td>
+            <td>
+              <span class="mark no">❌ Not for live selection</span>
+              Every change rewrites the file and reloads the viewer: a flash, and the scroll
+              position is lost. Fine for a pre-marked document, useless for hover.
+            </td>
+            <td>
+              <span class="mark no">❌ Impossible</span>
+              There is nothing to anchor to: no text nodes, no coordinates, no scroll position. A
+              box you inject stays put while the page scrolls away underneath it.
+            </td>
+            <td>
+              <span class="mark no">❌ Impossible</span>
+              Same wall &mdash; it renders the same opaque viewer.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Custom zoom controls</th>
+            <td>
+              <span class="mark yes">✅ Fully ours</span>
+              <code>width</code> is real zoom (pages re-render sharp); <code>scale</code> is only
+              canvas sharpness. Overlays stay aligned across zoom.
+            </td>
+            <td>
+              <span class="mark yes">✅ Fully ours, per page</span>
+              We pick the render scale ourselves &mdash; verified 695&nbsp;px → 1390&nbsp;px
+              canvases &mdash; and can re-render only what's visible.
+            </td>
+            <td>
+              <span class="mark no">❌ Browser's UI only</span>
+              Nothing we can drive.
+            </td>
+            <td>
+              <span class="mark no">❌ Browser's UI only</span>
+              You can't read, drive, restyle or hide its zoom. Only a load-time
+              <code>#zoom=</code>, which needs a reload.
+            </td>
+            <td>
+              <span class="mark no">❌ Browser's UI only</span>
+              It will forward <code>pdfOpenParams.zoom</code>, but still load-time only.
+            </td>
+          </tr>
+
+          <tr class="section" data-testid="section-annotations">
+            <th colspan="6">Annotations &mdash; how good is it, really</th>
+          </tr>
+
+          <tr>
+            <th class="sub">Show annotations to the user</th>
+            <td>
+              <span class="mark yes">✅ Yes</span>
+              Links, sticky notes, highlights and form fields all render. Icons need one prop
+              pointed at the icon assets, or notes show as broken images.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Only what we build</span>
+              Page content draws; the annotation and text layers are extra work we skipped here.
+            </td>
+            <td>
+              <span class="mark yes">✅ Yes &mdash; that's the point</span>
+              Verified: Chrome's own viewer draws our baked pink box, thumbnail included, with no
+              pdf.js anywhere.
+            </td>
+            <td>
+              <span class="mark yes">✅ Yes</span>
+              It's a real PDF viewer, so it draws them and makes links clickable.
+            </td>
+            <td>
+              <span class="mark yes">✅ Yes</span>
+              Same viewer.
+            </td>
+          </tr>
+
+          <tr>
+            <th class="sub">Read annotations in code</th>
+            <td>
+              <span class="mark yes">✅ Everything, per page</span>
+              Subtype, id, rectangle, contents, author, link URL or destination, and form field
+              name + value. Verified against a 5-annotation fixture.
+            </td>
+            <td>
+              <span class="mark yes">✅ Same API</span>
+              It's the same pdf.js document object, so everything the wrapper could read, we can
+              read.
+            </td>
+            <td>
+              <span class="mark yes">✅ Reads them back</span>
+              Its own parser lists annotations &mdash; we used that to confirm each bake landed.
+            </td>
+            <td>
+              <span class="mark no">❌ Nothing</span>
+              Zero annotation nodes, zero text reachable. The viewer lives outside the DOM.
+            </td>
+            <td>
+              <span class="mark no">❌ Nothing</span>
+              Measured the same as native.
+            </td>
+          </tr>
+
+          <tr>
+            <th class="sub">Jump to one annotation</th>
+            <td>
+              <span class="mark yes">✅ Precisely</span>
+              Each rendered annotation carries an id matching the data, so clicking a list entry
+              centres it &mdash; measured 13&nbsp;px off a 900&nbsp;px pane.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ We'd build it</span>
+              We have the rectangles, so scrolling to one is easy &mdash; but there's no rendered
+              annotation element to target unless we draw that layer.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              Nothing inside the viewer is reachable.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              No handle on anything inside.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              Same.
+            </td>
+          </tr>
+
+          <tr>
+            <th class="sub">Read invisible / metadata-only annotations</th>
+            <td>
+              <span class="mark yes">✅ Yes &mdash; useful trick</span>
+              A hidden form-field annotation is invisible to the user, still readable by us, and
+              still works as a scroll anchor. That's how a backend can stamp IDs the UI can find.
+            </td>
+            <td>
+              <span class="mark yes">✅ Same API</span>
+              Identical to the wrapper &mdash; it's pdf.js underneath.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Writes and reads, flags untested</span>
+              It can write annotations, but we didn't verify hidden flags survive its writer.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+            </td>
+          </tr>
+
+          <tr>
+            <th class="sub">Fake it with overlays instead</th>
+            <td>
+              <span class="mark yes">✅ Best of both</span>
+              For "highlight this clause" you don't need PDF annotations at all &mdash; our own
+              boxes are pixel-exact, styleable and clickable, and never touch the file.
+            </td>
+            <td>
+              <span class="mark yes">✅ Same</span>
+              Verified pixel-exact on our own canvases too.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              An overlay can't follow the page.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              An overlay can't follow the page.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              Same.
+            </td>
+          </tr>
+
+          <tr class="section">
+            <th colspan="6">Cost and risk</th>
+          </tr>
+
+          <tr>
+            <th>Reproducibility / durability</th>
+            <td>
+              <span class="mark yes">✅ We own the output</span>
+              Same bytes in, same pixels out, pinned to a version we choose. Risk is upstream
+              churn: a "tiny bit shorter" pdf.js refactor is what broke Safari.
+            </td>
+            <td>
+              <span class="mark yes">✅ We own even more of it</span>
+              Same guarantee, and one less layer between us and pdf.js.
+            </td>
+            <td>
+              <span class="mark yes">✅ Most durable output</span>
+              The mark is <em>in the file</em>, so it survives download, print, email and any other
+              PDF reader. Nothing else here can say that.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Moves under us</span>
+              Rendering and UI change with browser releases and we can't pin them. Worse, the
+              tricks that look like they work (fragment navigation) fail <em>silently</em>.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Same, plus a 0.0.x wrapper</span>
+              Inherits the browser's churn. The wrapper itself is 12 lines, so trivially
+              vendorable if it goes stale.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Exposure to third-party churn</th>
+            <td>
+              <span class="mark warn">⚠️ High &mdash; and already bitten us</span>
+              We ride Mozilla's release train. A refactor upstream described as "a tiny bit
+              shorter" is what silently broke Safari. Pinning helps, but security updates drag the
+              churn back in.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Same train, fewer carriages</span>
+              Still pdf.js, but no wrapper in between, so upgrades are ours to time.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Small package, thin ice</span>
+              One published version, untouched since 2022, a fork of another dormant project. The
+              output is standard PDF though, so a replacement writer is swappable.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Different flavour of the same problem</span>
+              Nothing to upgrade, but browser vendors change the viewer whenever they like and we
+              can't pin a browser.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Browser churn + a 0.0.x wrapper</span>
+              Same browser exposure. The wrapper is unversioned-feeling (0.0.5) but so small that
+              forking it is a non-event.
+            </td>
+          </tr>
+          <tr>
+            <th>Last upstream release</th>
+            <td>
+              <span class="mark yes">✅ Days ago</span>
+              Wrapper 2.1.6 on 2026-08-25; pdf.js 6.3.289 on 2026-08-29 (we pin 6.2.108). Very much
+              alive &mdash; which is also exactly why it churns.
+            </td>
+            <td>
+              <span class="mark yes">✅ Days ago</span>
+              Same pdf.js, five days old at the time of writing. Its only dependency.
+            </td>
+            <td>
+              <span class="mark no">❌ Dormant &mdash; about 4.5 years</span>
+              Its only published version is from <strong>2022-04-05</strong>, and the project it was
+              forked from last committed <strong>2022-01-15</strong>. It works today; nobody is
+              fixing it tomorrow. Its <code>pako</code> pin is stuck on 1.x while 3.x ships.
+            </td>
+            <td>
+              <span class="mark yes">✅ Not applicable</span>
+              Ships with the browser and updates on the browser's cadence, whether we like it or not.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Quiet</span>
+              Wrapper 2025-10-30 (~10 months), PDFObject 2025-02-13 (~19 months). Sleepy rather than
+              dead, and small enough that it hardly matters.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Effort to build</th>
+            <td>
+              <span class="mark warn">⚠️ Large</span>
+              Everything is ours: navigation, zoom, overlays, coordinate mapping, the Safari
+              polyfill, and lazy rendering before long documents are usable.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Largest</span>
+              Everything the wrapper needs <em>plus</em> page layout and lazy rendering by hand. No
+              text selection unless we build the text layer too.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Medium</span>
+              Coordinate conversion plus a re-bake-and-reload flow. Far less than owning a viewer.
+            </td>
+            <td>
+              <span class="mark yes">✅ Tiny</span>
+              One tag and an object URL. Viewer, toolbar, print and download come free.
+            </td>
+            <td>
+              <span class="mark yes">✅ Tiny</span>
+              One component, plus fallback and error messages you'd otherwise hand-roll.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Bundle size</th>
+            <td>
+              <span class="mark no">❌ Heavy</span>
+              828&nbsp;KB over the wire; ~797&nbsp;KB of it the library. Mitigable to ~231&nbsp;KB
+              initial by splitting the worker and lazy-loading the route.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ 155&nbsp;KB, then 470&nbsp;KB</span>
+              155&nbsp;KB to load the page; the pdf.js worker is a separate 470&nbsp;KB fetched the
+              first time a document is opened.
+            </td>
+            <td>
+              <span class="mark yes">✅ 84&nbsp;KB</span>
+              All of it up front, nothing deferred.
+            </td>
+            <td>
+              <span class="mark yes">✅ Nothing</span>
+              31&nbsp;KB, which is almost entirely our shared Vue baseline.
+            </td>
+            <td>
+              <span class="mark yes">✅ Negligible</span>
+              33&nbsp;KB &mdash; about 4&nbsp;KB over the same baseline.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Added to the compiled bundle</th>
+            <td>
+              <span class="mark no">❌ +797&nbsp;KB gzip</span>
+              That's the library alone, on top of what the app already ships. Splitting the worker
+              out and lazy-loading the route drops the <em>initial</em> hit to ~231&nbsp;KB, with
+              ~492&nbsp;KB fetched the first time someone opens a document.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ +125&nbsp;KB gzip</span>
+              Six times lighter than the wrapper for the same rendering: modern build, no viewer
+              module, worker kept separate.
+            </td>
+            <td>
+              <span class="mark yes">✅ +54&nbsp;KB gzip</span>
+              annotpdf plus crypto-js and pako.
+            </td>
+            <td>
+              <span class="mark yes">✅ +0&nbsp;KB</span>
+              No library ships. The page's 31&nbsp;KB is the Vue runtime we already pay for.
+            </td>
+            <td>
+              <span class="mark yes">✅ +4&nbsp;KB gzip</span>
+              PDFObject itself is ~2.4&nbsp;KB of that. Rounding error.
+            </td>
+          </tr>
+
+          <tr>
+            <th>External dependencies</th>
+            <td>
+              <span class="mark warn">⚠️ Three, one of them big</span>
+              <code>vue-pdf-embed</code> → <code>pdfjs-dist</code> (Mozilla, large, fast-moving),
+              plus a stream polyfill for Safari. Also pulls an optional native binary and declares
+              Node&nbsp;≥22.13 &mdash; check our CI image. ~39&nbsp;MB installed.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ One, the big one</span>
+              Just <code>pdfjs-dist</code>. No wrapper, and no Safari stream polyfill because we
+              never touch the text layer.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Three small ones</span>
+              <code>@digital-blueprint/annotpdf</code> + <code>crypto-js</code> +
+              <code>pako</code>. Ships its own TypeScript types.
+            </td>
+            <td>
+              <span class="mark yes">✅ None</span>
+              The browser is the dependency. Nothing to install, upgrade or audit.
+            </td>
+            <td>
+              <span class="mark yes">✅ Two tiny ones</span>
+              <code>pdfobject-vue</code> + <code>pdfobject</code>, same author, no transitive deps.
+              The wrapper is 12 lines &mdash; vendorable in an afternoon if it goes stale.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Incrementality of effort</th>
+            <td>
+              <span class="mark yes">✅ Very staged</span>
+              Render → page nav → highlight → ingest coordinates → zoom, each shippable on its
+              own. That's literally the order this lab was built in.
+            </td>
+            <td>
+              <span class="mark yes">✅ Same path</span>
+              Identical staging, and you can start without lazy rendering and add it later.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Narrow</span>
+              It does one thing well. There's no step two.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ One step, then a wall</span>
+              You get a viewer on day one and then cannot go further. The next feature means
+              replacing the approach outright.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Same wall, one step further</span>
+              Detection and fallback are the only increments available.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Backend work &amp; discovery needed</th>
+            <td>
+              <span class="mark warn">⚠️ Yes, and one real unknown</span>
+              BE must expose OCR entities (normalized vertices + page index) to the FE. Confirm
+              the 0-based page index in real payloads. <strong>Biggest risk:</strong> scanned
+              JPEG&nbsp;2000/JBIG2 pages need extra decoder assets hosted &mdash; untested. Baking
+              new annotations in is a BE/pdf-lib job.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Same as the wrapper</span>
+              Needs the same OCR coordinates, and carries the same untested scanned-image risk.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Coordinates <em>and</em> page size</span>
+              It can't read the page box itself, so the BE should send page dimensions with the OCR
+              coordinates &mdash; or we regex the MediaBox and hope.
+            </td>
+            <td>
+              <span class="mark yes">✅ Just serve the file</span>
+              No FE contract to design. But it also can't consume OCR coordinates at all, so any
+              BE work for highlighting would be wasted here.
+            </td>
+            <td>
+              <span class="mark yes">✅ Just serve the file</span>
+              Same.
+            </td>
+          </tr>
+
+          <tr>
+            <th>Bottom line</th>
+            <td>
+              The only option that can highlight fields, drive zoom, and consume OCR coordinates.
+              You pay ~800&nbsp;KB and own the viewer.
+            </td>
+            <td>
+              The same capabilities as the wrapper at a sixth of the bytes, if we accept writing the
+              viewer plumbing ourselves.
+            </td>
+            <td>
+              The one way to get a real highlight into the free native viewer. Great for "here's your
+              pre-marked document", wrong for interactive selection.
+            </td>
+            <td>
+              Unbeatable if the requirement is only "show the user this PDF". Cannot grow into
+              anything else.
+            </td>
+            <td>
+              The better default for read-only viewing &mdash; native's price with graceful
+              failure. Same ceiling.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="legend">
+      <span class="yes">✅ supported</span>
+      <span class="warn">⚠️ supported with caveats</span>
+      <span class="no">❌ not possible</span>
+      <span class="na">❌ out of scope</span>
+    </p>
+
+    <footer>
+      Timings are medians of 3 runs on an 8-page text-only PDF in Chromium; sizes are what the
+      browser downloads for the built app. Re-measure with <code>npm run measure</code>.
+      &middot; <a href="/">back to the lab</a>
+    </footer>
+  </body>
+</html>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import MarkerControl, { type Marker } from './MarkerControl.vue'
+import DependencyList, { type Dependency } from './DependencyList.vue'
 
 type TagName = 'embed' | 'object' | 'iframe'
 type NavMode = 'remount' | 'fragment' | 'hash'
@@ -96,6 +97,8 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(revoke)
+
+const deps: Dependency[] = []
 </script>
 
 <template>
@@ -208,6 +211,7 @@ onBeforeUnmount(revoke)
       <ul data-testid="log">
         <li v-for="entry in log" :key="entry">{{ entry }}</li>
       </ul>
+      <DependencyList added="+2.5 KB gzip (this page's own code)" :deps="deps" download="31 KB over 5 requests" />
     </section>
   </div>
 </template>
