@@ -78,13 +78,13 @@ const bake = async () => {
         `[${left.toFixed(1)}, ${top.toFixed(1)}, ${right.toFixed(1)}, ${bottom.toFixed(1)}]`,
       )
 
-      factory.createSquareAnnotation(
+      // a Highlight blends over the text; a Square gets an opaque synthesised appearance
+      factory.createHighlightAnnotation(
         page - 1,
         [left, top, right, bottom],
         label,
         'closinglock-lab',
-        dimmed ? { r: 60, g: 120, b: 220 } : { r: 255, g: 0, b: 140 },
-        dimmed ? { r: 225, g: 235, b: 250 } : { r: 255, g: 220, b: 240 },
+        dimmed ? { r: 120, g: 170, b: 255 } : { r: 255, g: 105, b: 190 },
       )
     })
 
