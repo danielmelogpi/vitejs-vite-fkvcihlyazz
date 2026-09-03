@@ -84,11 +84,19 @@ onMounted(async () => {
       return
     }
 
+    const parsed = lines
+      .map((line) => ({ raw: line, parsed: parseField(line) }))
+      .sort(
+        (a, b) =>
+          (a.parsed.page ?? Number.MAX_SAFE_INTEGER) -
+          (b.parsed.page ?? Number.MAX_SAFE_INTEGER),
+      )
+
     seq = 0
-    entries.value = lines.map((line) => {
+    entries.value = parsed.map((record) => {
       seq += 1
 
-      return { id: seq, raw: line, parsed: parseField(line) }
+      return { id: seq, raw: record.raw, parsed: record.parsed }
     })
 
     preloaded.value = entries.value.length
@@ -113,7 +121,7 @@ watch(() => props.maxPage, publish)
 
     <p v-if="preloaded" class="hint" data-testid="ocr-preloaded">
       Preloaded <strong>{{ preloaded }}</strong> record(s) from
-      <code>public/page-refs.json</code> &mdash; edit, remove or add more below.
+      <code>public/page-refs.json</code>, ordered by page &mdash; edit, remove or add more below.
     </p>
 
     <div v-for="entry in entries" :key="entry.id" class="ocr-entry">

@@ -2,7 +2,6 @@
 import { computed, ref, shallowRef, useTemplateRef } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import type { PDFDocumentProxy } from 'pdfjs-dist'
-import MarkerControl, { type Marker } from './MarkerControl.vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
 
@@ -35,7 +34,6 @@ const viewer = useTemplateRef<HTMLElement>('viewer')
 const zoomedWidth = computed(() =>
   baseWidth.value ? Math.round((baseWidth.value * zoom.value) / 100) : undefined,
 )
-const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
 
 const ocrBoxes = ref<OcrBox[]>([])
 
@@ -101,10 +99,6 @@ const onLoaded = async (doc: PDFDocumentProxy) => {
     baseWidth.value = viewer.value.clientWidth - 24
   }
 
-  if (marker.value.page > doc.numPages) {
-    marker.value.page = 1
-  }
-
   const found: FoundAnnotation[] = []
 
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber += 1) {
@@ -144,7 +138,11 @@ const goToAnnotation = (annotation: FoundAnnotation) => {
     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+const focusedOcr = ref<number | null>(null)
+
 const jumpToOcrBox = (field: OcrBox) => {
+  focusedOcr.value = field.id
+
   page.value = field.page
 
   const target =
@@ -152,14 +150,6 @@ const jumpToOcrBox = (field: OcrBox) => {
     document.getElementById(`${EMBED_ID}-${field.page}`)
 
   target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-}
-
-const scrollToMarker = () => {
-  page.value = marker.value.page
-
-  document
-    .querySelector('[data-testid="marker"]')
-    ?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 const goToPage = () => {
@@ -220,24 +210,11 @@ const deps: Dependency[] = [
         @rendered="onRendered"
       >
         <template #after-page="{ page: pageNumber }">
-          <div
-            v-if="marker.text && pageNumber === marker.page"
-            class="marker"
-            data-testid="marker"
-            :style="{
-              left: `${marker.x}%`,
-              top: `${marker.y}%`,
-              width: `${marker.w}%`,
-              height: `${marker.h}%`,
-            }"
-          >
-            {{ marker.text }}
-          </div>
 
           <div
             v-for="field in ocrBoxesByPage[pageNumber] ?? []"
             :key="field.id"
-            class="ocr-box"
+            :class="['ocr-box', { 'is-dimmed': focusedOcr !== null && focusedOcr !== field.id }]"
             :data-testid="`ocr-box-${field.id}`"
             :style="{
               left: `${field.box.x}%`,
@@ -341,14 +318,6 @@ const deps: Dependency[] = [
         />
       </label>
 
-      <MarkerControl v-model="marker" :max-page="numPages || 1">
-        <template #actions>
-          <button data-testid="scroll-to-marker" type="button" @click="scrollToMarker">
-            Scroll to marker
-          </button>
-        </template>
-      </MarkerControl>
-
       <OcrFieldList v-model="ocrBoxes" :max-page="numPages" @jump="jumpToOcrBox" />
 
       <label>
@@ -425,25 +394,23 @@ body {
   margin: 0 auto;
 }
 
-.marker {
-  position: absolute;
-  box-sizing: border-box;
-  padding: 2px 6px;
-  border: 1px solid rgba(0, 90, 200, 0.9);
-  border-radius: 3px;
-  background: rgba(0, 120, 255, 0.25);
-  font-size: 12px;
-  overflow: hidden;
-  pointer-events: none;
-}
-
 .ocr-box {
   position: absolute;
+  transition: border-color 150ms, background 150ms;
   z-index: 6;
   box-sizing: border-box;
   border: 2px solid rgba(200, 0, 120, 0.9);
   background: rgba(255, 0, 140, 0.18);
   pointer-events: none;
+}
+
+.ocr-box.is-dimmed {
+  border-color: rgba(60, 120, 220, 0.75);
+  background: rgba(60, 120, 220, 0.12);
+}
+
+.ocr-box.is-dimmed .ocr-label {
+  background: rgba(60, 120, 220, 0.8);
 }
 
 .ocr-label {

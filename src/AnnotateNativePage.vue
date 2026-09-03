@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { AnnotationFactory } from '@digital-blueprint/annotpdf'
-import MarkerControl, { type Marker } from './MarkerControl.vue'
 import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 
@@ -11,8 +10,8 @@ const fileName = ref('')
 const pageSize = ref({ width: 612, height: 792, detected: false })
 const status = ref('')
 const bakedBytes = ref(0)
-const marker = ref<Marker>({ text: 'buyer name', page: 1, x: 20, y: 30, w: 30, h: 6 })
 const selectedPage = ref(1)
+const focusedOcr = ref<number | null>(null)
 const ocrBoxes = ref<OcrBox[]>([])
 const pageCount = ref(0)
 
@@ -57,10 +56,7 @@ const bake = async () => {
 
   const { width, height } = pageSize.value
 
-  const boxes = [
-    { label: marker.value.text, page: marker.value.page, box: { ...marker.value } },
-    ...ocrBoxes.value.map((item) => ({ label: item.label, page: item.page, box: item.box })),
-  ].filter(
+  const boxes = ocrBoxes.value.filter(
     (item) =>
       item.label && item.page >= 1 && (!pageCount.value || item.page <= pageCount.value),
   )
@@ -70,7 +66,9 @@ const bake = async () => {
 
     const rects: string[] = []
 
-    boxes.forEach(({ label, page, box }) => {
+    boxes.forEach(({ id, label, page, box }) => {
+      const dimmed = focusedOcr.value !== null && focusedOcr.value !== id
+
       const left = (box.x / 100) * width
       const right = ((box.x + box.w) / 100) * width
       const top = (1 - box.y / 100) * height
@@ -85,8 +83,8 @@ const bake = async () => {
         [left, top, right, bottom],
         label,
         'closinglock-lab',
-        { r: 255, g: 0, b: 140 },
-        { r: 255, g: 220, b: 240 },
+        dimmed ? { r: 60, g: 120, b: 220 } : { r: 255, g: 0, b: 140 },
+        dimmed ? { r: 225, g: 235, b: 250 } : { r: 255, g: 220, b: 240 },
       )
     })
 
@@ -122,7 +120,7 @@ const onFileInput = async (event: Event) => {
   await bake()
 }
 
-watch(ocrBoxes, () => void bake(), { deep: true })
+watch([ocrBoxes, focusedOcr], () => void bake(), { deep: true })
 
 onBeforeUnmount(revoke)
 
@@ -211,16 +209,15 @@ const deps: Dependency[] = [
 
       <OcrFieldList
         v-model="ocrBoxes"
-        @jump="(field) => (selectedPage = field.page)"
+        @jump="
+          (field) => {
+            focusedOcr = field.id
+            selectedPage = field.page
+          }
+        "
         :max-page="pageCount"
         note="Each field is written into the file, so a change re-bakes and reloads the viewer."
       />
-
-      <MarkerControl v-model="marker" :max-page="pageCount || 10">
-        <template #actions>
-          <button data-testid="bake" type="button" @click="bake">Bake annotation</button>
-        </template>
-      </MarkerControl>
 
       <p class="hint" data-testid="page-size">
         Page box: {{ pageSize.width }} &times; {{ pageSize.height }} pt

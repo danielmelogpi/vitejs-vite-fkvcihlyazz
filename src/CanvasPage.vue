@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, ref, shallowRef, useTemplateRef } from 'vue'
 import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url'
-import MarkerControl, { type Marker } from './MarkerControl.vue'
 import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 
@@ -15,7 +14,6 @@ const pages = ref<PageSlot[]>([])
 const zoom = ref(100)
 const rendered = ref(0)
 const status = ref('')
-const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
 const selectedPage = ref(1)
 const ocrBoxes = ref<OcrBox[]>([])
 
@@ -145,11 +143,13 @@ const scrollToPage = (pageNumber: number) => {
     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-const goToPage = () => scrollToPage(marker.value.page)
-
 const goToSelectedPage = () => scrollToPage(selectedPage.value)
 
+const focusedOcr = ref<number | null>(null)
+
 const jumpToOcrBox = (field: OcrBox) => {
+  focusedOcr.value = field.id
+
   selectedPage.value = field.page
 
   const target =
@@ -190,23 +190,9 @@ const deps: Dependency[] = [
         <canvas :id="`canvas-${slot.number}`" :data-testid="`canvas-${slot.number}`" />
 
         <div
-          v-if="marker.text && slot.number === marker.page"
-          class="marker"
-          data-testid="marker"
-          :style="{
-            left: `${marker.x}%`,
-            top: `${marker.y}%`,
-            width: `${marker.w}%`,
-            height: `${marker.h}%`,
-          }"
-        >
-          {{ marker.text }}
-        </div>
-
-        <div
           v-for="field in ocrBoxesByPage[slot.number] ?? []"
           :key="field.id"
-          class="ocr-box"
+          :class="['ocr-box', { 'is-dimmed': focusedOcr !== null && focusedOcr !== field.id }]"
           :data-testid="`ocr-box-${field.id}`"
           :style="{
             left: `${field.box.x}%`,
@@ -277,14 +263,6 @@ const deps: Dependency[] = [
 
       <OcrFieldList v-model="ocrBoxes" :max-page="doc?.numPages ?? 0" @jump="jumpToOcrBox" />
 
-      <MarkerControl v-model="marker" :max-page="doc?.numPages ?? 1">
-        <template #actions>
-          <button data-testid="scroll-to-marker" type="button" @click="goToPage">
-            Scroll to marker
-          </button>
-        </template>
-      </MarkerControl>
-
       <p class="status" data-testid="status">{{ status || 'waiting for a file' }}</p>
       <p class="hint" data-testid="rendered-count">{{ rendered }}</p>
       <DependencyList added="+125 KB gzip" :deps="deps" download="155 KB over 6 requests" />
@@ -331,11 +309,21 @@ canvas {
 
 .ocr-box {
   position: absolute;
+  transition: border-color 150ms, background 150ms;
   z-index: 6;
   box-sizing: border-box;
   border: 2px solid rgba(200, 0, 120, 0.9);
   background: rgba(255, 0, 140, 0.18);
   pointer-events: none;
+}
+
+.ocr-box.is-dimmed {
+  border-color: rgba(60, 120, 220, 0.75);
+  background: rgba(60, 120, 220, 0.12);
+}
+
+.ocr-box.is-dimmed .ocr-label {
+  background: rgba(60, 120, 220, 0.8);
 }
 
 .ocr-label {
@@ -348,18 +336,6 @@ canvas {
   font-size: 10px;
   line-height: 14px;
   white-space: nowrap;
-}
-
-.marker {
-  position: absolute;
-  box-sizing: border-box;
-  padding: 2px 6px;
-  border: 1px solid rgba(0, 90, 200, 0.9);
-  border-radius: 3px;
-  background: rgba(0, 120, 255, 0.25);
-  font-size: 12px;
-  overflow: hidden;
-  pointer-events: none;
 }
 
 label {

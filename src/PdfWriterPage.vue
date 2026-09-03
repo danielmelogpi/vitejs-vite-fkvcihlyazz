@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
-import MarkerControl, { type Marker } from './MarkerControl.vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
 
@@ -32,8 +31,8 @@ const pageSize = ref('')
 const outputBytes = ref(0)
 const annotsBack = ref(0)
 const status = ref('')
-const marker = ref<Marker>({ text: 'buyer name', page: 1, x: 15, y: 22, w: 40, h: 7 })
 const selectedPage = ref(1)
+const focusedOcr = ref<number | null>(null)
 
 const ocrBoxes = ref<OcrBox[]>([])
 
@@ -59,22 +58,17 @@ const bake = async () => {
     const doc = await PDFDocument.load(source.value)
     pageCount.value = doc.getPageCount()
 
-    const boxes = [
-      { label: marker.value.text, page: marker.value.page, box: { ...marker.value } },
-      ...ocrBoxes.value.map((item) => ({
-        label: item.label,
-        page: item.page,
-        box: { x: item.box.x, y: item.box.y, w: item.box.w, h: item.box.h },
-      })),
-    ].filter((item) => item.label && item.page >= 1 && item.page <= doc.getPageCount())
+    const boxes = ocrBoxes.value.filter(
+      (item) => item.label && item.page >= 1 && item.page <= doc.getPageCount(),
+    )
 
-    boxes.forEach(({ label, page: pageNumber, box }) => {
+    boxes.forEach(({ id, label, page: pageNumber, box }) => {
+      const dimmed = focusedOcr.value !== null && focusedOcr.value !== id
+
       const page = doc.getPage(pageNumber - 1)
       const { width, height } = page.getSize()
 
-      if (pageNumber === marker.value.page) {
-        pageSize.value = `${Math.round(width)} × ${Math.round(height)} pt`
-      }
+      pageSize.value = `${Math.round(width)} × ${Math.round(height)} pt`
 
       const left = (box.x / 100) * width
       const right = ((box.x + box.w) / 100) * width
@@ -86,8 +80,8 @@ const bake = async () => {
           Type: 'Annot',
           Subtype: 'Square',
           Rect: [left, bottom, right, top],
-          C: [1, 0, 0.55],
-          IC: [1, 0.86, 0.94],
+          C: dimmed ? [0.23, 0.47, 0.86] : [1, 0, 0.55],
+          IC: dimmed ? [0.88, 0.92, 0.98] : [1, 0.86, 0.94],
           CA: 0.6,
           F: 4,
           T: PDFString.of('closinglock-lab'),
@@ -104,9 +98,9 @@ const bake = async () => {
         y: bottom,
         width: right - left,
         height: top - bottom,
-        borderColor: rgb(0.78, 0, 0.55),
+        borderColor: dimmed ? rgb(0.23, 0.47, 0.86) : rgb(0.78, 0, 0.55),
         borderWidth: 1.5,
-        color: rgb(1, 0.86, 0.94),
+        color: dimmed ? rgb(0.88, 0.92, 0.98) : rgb(1, 0.86, 0.94),
         opacity: 0.55,
       })
     })
@@ -114,7 +108,8 @@ const bake = async () => {
     const output = await doc.save()
 
     const check = await PDFDocument.load(output)
-    const annots = check.getPage(marker.value.page - 1).node.Annots()
+    const inspected = boxes[0]?.page ?? 1
+    const annots = check.getPage(inspected - 1).node.Annots()
     annotsBack.value = annots?.size?.() ?? 0
 
     revoke()
@@ -124,8 +119,7 @@ const bake = async () => {
     )
     status.value =
       `${props.name} · ${mode.value} · ${boxes.length} box(es) · ` +
-      `${output.byteLength} bytes · ${annotsBack.value} annot(s) read back on page ` +
-      `${marker.value.page}`
+      `${output.byteLength} bytes · ${annotsBack.value} annot(s) read back on page ${inspected}`
   } catch (error) {
     status.value = `failed: ${String(error).slice(0, 180)}`
   }
@@ -143,7 +137,7 @@ const onFileInput = async (event: Event) => {
   await bake()
 }
 
-watch(ocrBoxes, () => void bake(), { deep: true })
+watch([ocrBoxes, focusedOcr], () => void bake(), { deep: true })
 
 onBeforeUnmount(revoke)
 
@@ -203,13 +197,14 @@ onBeforeUnmount(revoke)
         <span class="hint">reloads the viewer at that page — the fragment only works on load</span>
       </label>
 
-      <MarkerControl v-model="marker" :max-page="pageCount || 1">
-        <template #actions>
-          <button data-testid="bake" type="button" @click="bake">Re-bake</button>
-        </template>
-      </MarkerControl>
-
-      <OcrFieldList v-model="ocrBoxes" @jump="(field) => (selectedPage = field.page)" :max-page="pageCount" note="Each box is written into the file, so changing one re-bakes and reloads the viewer." />
+      <OcrFieldList
+        v-model="ocrBoxes"
+        @jump="
+          (field) => {
+            focusedOcr = field.id
+            selectedPage = field.page
+          }
+        " :max-page="pageCount" note="Each box is written into the file, so changing one re-bakes and reloads the viewer." />
 
       <p class="hint" data-testid="page-size">Page box: {{ pageSize || '—' }}</p>
       <p class="status" data-testid="status">{{ status || 'waiting for a file' }}</p>
