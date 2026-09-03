@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+public/AL2.pdf
+public/AL2.json
+public/AL2*.json

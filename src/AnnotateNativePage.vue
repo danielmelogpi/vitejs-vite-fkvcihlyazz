@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { AnnotationFactory } from '@digital-blueprint/annotpdf'
 import MarkerControl, { type Marker } from './MarkerControl.vue'
+import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 
 const source = ref<Uint8Array | null>(null)
@@ -11,12 +12,26 @@ const pageSize = ref({ width: 612, height: 792, detected: false })
 const status = ref('')
 const bakedBytes = ref(0)
 const marker = ref<Marker>({ text: 'buyer name', page: 1, x: 20, y: 30, w: 30, h: 6 })
+const selectedPage = ref(1)
+const ocrBoxes = ref<OcrBox[]>([])
+const pageCount = ref(0)
+
+const viewerSrc = computed(() =>
+  viewerUrl.value ? `${viewerUrl.value}#page=${selectedPage.value}` : '',
+)
 
 const revoke = () => {
   if (viewerUrl.value) {
     URL.revokeObjectURL(viewerUrl.value)
     viewerUrl.value = ''
   }
+}
+
+const countPages = (bytes: Uint8Array) => {
+  const text = new TextDecoder('latin1').decode(bytes)
+  const counts = [...text.matchAll(/\/Count\s+(\d+)/g)].map((match) => Number(match[1]))
+
+  pageCount.value = counts.length ? Math.max(...counts) : 0
 }
 
 const detectPageSize = (bytes: Uint8Array) => {
@@ -41,22 +56,39 @@ const bake = async () => {
   }
 
   const { width, height } = pageSize.value
-  const left = (marker.value.x / 100) * width
-  const right = ((marker.value.x + marker.value.w) / 100) * width
-  const top = (1 - marker.value.y / 100) * height
-  const bottom = (1 - (marker.value.y + marker.value.h) / 100) * height
+
+  const boxes = [
+    { label: marker.value.text, page: marker.value.page, box: { ...marker.value } },
+    ...ocrBoxes.value.map((item) => ({ label: item.label, page: item.page, box: item.box })),
+  ].filter(
+    (item) =>
+      item.label && item.page >= 1 && (!pageCount.value || item.page <= pageCount.value),
+  )
 
   try {
     const factory = new AnnotationFactory(source.value)
 
-    factory.createSquareAnnotation(
-      marker.value.page - 1,
-      [left, top, right, bottom],
-      marker.value.text,
-      'closinglock-lab',
-      { r: 255, g: 0, b: 140 },
-      { r: 255, g: 220, b: 240 },
-    )
+    const rects: string[] = []
+
+    boxes.forEach(({ label, page, box }) => {
+      const left = (box.x / 100) * width
+      const right = ((box.x + box.w) / 100) * width
+      const top = (1 - box.y / 100) * height
+      const bottom = (1 - (box.y + box.h) / 100) * height
+
+      rects.push(
+        `[${left.toFixed(1)}, ${top.toFixed(1)}, ${right.toFixed(1)}, ${bottom.toFixed(1)}]`,
+      )
+
+      factory.createSquareAnnotation(
+        page - 1,
+        [left, top, right, bottom],
+        label,
+        'closinglock-lab',
+        { r: 255, g: 0, b: 140 },
+        { r: 255, g: 220, b: 240 },
+      )
+    })
 
     const output = factory.write()
     const readBack = (await new AnnotationFactory(output).getAnnotations()).flat().length
@@ -67,9 +99,9 @@ const bake = async () => {
       new Blob([output as unknown as BlobPart], { type: 'application/pdf' }),
     )
     status.value =
-      `baked [${left.toFixed(1)}, ${top.toFixed(1)}, ${right.toFixed(1)}, ` +
-      `${bottom.toFixed(1)}] on page ${marker.value.page} — ${output.byteLength} bytes, ` +
-      `${readBack} annotation(s) in the output`
+      `baked ${boxes.length} box(es) on page(s) ${boxes.map((item) => item.page).join(', ')}` +
+      ` — ${output.byteLength} bytes, ${readBack} annotation(s) in the output` +
+      ` · first rect ${rects[0] ?? '—'}`
   } catch (error) {
     status.value = `failed: ${String(error).slice(0, 160)}`
   }
@@ -86,8 +118,11 @@ const onFileInput = async (event: Event) => {
   source.value = new Uint8Array(buffer)
   fileName.value = file.name
   detectPageSize(source.value)
+  countPages(source.value)
   await bake()
 }
+
+watch(ocrBoxes, () => void bake(), { deep: true })
 
 onBeforeUnmount(revoke)
 
@@ -126,7 +161,13 @@ const deps: Dependency[] = [
 <template>
   <div class="lab">
     <section class="pane viewer" data-testid="viewer">
-      <iframe v-if="viewerUrl" data-testid="pdf-tag" :src="viewerUrl" title="pdf" />
+      <iframe
+        v-if="viewerSrc"
+        :key="viewerSrc"
+        data-testid="pdf-tag"
+        :src="viewerSrc"
+        title="pdf"
+      />
       <p v-else data-testid="empty-state">Choose a PDF to display it here.</p>
     </section>
 
@@ -138,6 +179,7 @@ const deps: Dependency[] = [
           <li>Whether a highlight box can be baked into the bytes client-side</li>
           <li>Whether the native viewer then shows it (no pdf.js anywhere)</li>
           <li>What it costs, and what it can't do</li>
+          <li>Document AI boxes baked in as real annotations</li>
           <li>
             Alternatives were researched separately &mdash; <code>@cantoo/pdf-lib</code> is the
             maintained option (findings §21)
@@ -159,7 +201,22 @@ const deps: Dependency[] = [
         />
       </label>
 
-      <MarkerControl v-model="marker" :max-page="10">
+      <label>
+        Page <output data-testid="page-value">{{ selectedPage }}</output>
+        <select v-model.number="selectedPage" data-testid="page-select">
+          <option v-for="n in pageCount || 1" :key="n" :value="n">{{ n }}</option>
+        </select>
+        <span class="hint">reloads the viewer at that page — the fragment only works on load</span>
+      </label>
+
+      <OcrFieldList
+        v-model="ocrBoxes"
+        @jump="(field) => (selectedPage = field.page)"
+        :max-page="pageCount"
+        note="Each field is written into the file, so a change re-bakes and reloads the viewer."
+      />
+
+      <MarkerControl v-model="marker" :max-page="pageCount || 10">
         <template #actions>
           <button data-testid="bake" type="button" @click="bake">Bake annotation</button>
         </template>

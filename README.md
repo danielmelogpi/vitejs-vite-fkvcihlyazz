@@ -15,6 +15,8 @@ right saying what it evaluates and what the page weighs.
 | `/pdfobject.html` | `pdfobject-vue` | 28 KB |
 | `/canvas.html` | pdf.js core onto our own canvases, lazily | 155 KB + 470 KB worker |
 | `/annotate-native.html` | `annotpdf` writes annotations, native viewer draws them | 84 KB |
+| `/cantoo-pdf-lib.html` | `@cantoo/pdf-lib`: annotations or drawn content, no rendering | 283 KB |
+| `/pdfme-pdf-lib.html` | `@pdfme/pdf-lib`: same, lighter, no fork extras | 251 KB |
 
 Measure them yourself with `npm run measure` (builds, then walks the Vite manifest summing each entry's
 chunks and CSS). The pdf.js page is dominated by pdf.js; the two native pages are almost entirely the Vue
@@ -61,7 +63,7 @@ all three routes. See findings §12.
 `/pdfobject.html` renders the same PDFs through [`pdfobject-vue`](https://www.npmjs.com/package/pdfobject-vue)
 — the official Vue 3 wrapper around PDFObject. ~2.8 KB gzip, adds browser capability detection and a
 download-link fallback on top of the native tag, but has the same ceiling (no JS API, page changes
-re-embed). Note it re-embeds on *every* component update, not just when its props change. See findings §13.
+re-embed). Note it re-embeds on *every* component update, not just when its props change. See the comparison matrix at `/matrix.html`.
 
 ## Safari
 
@@ -96,5 +98,3 @@ this. Verify in real Safari by hand, or with the CI-runnable stand-in in the pla
 - **Not wired:** the select doesn't follow manual scrolling — scrolling to page 5 by hand leaves the
   select where it was. That would need an `IntersectionObserver` over the page containers.
 
-Findings: `ai-planning/vue-pdf-embed/findings.md`.
-UAT: `ai-planning/playwright-playground/vue-pdf-embed-lab`.

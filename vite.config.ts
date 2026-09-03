@@ -17,6 +17,8 @@ export default defineConfig({
         matrix: entry('matrix'),
         annotateNative: entry('annotate-native'),
         canvas: entry('canvas'),
+        cantooPdfLib: entry('cantoo-pdf-lib'),
+        pdfmePdfLib: entry('pdfme-pdf-lib'),
       },
     },
   },

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, ref, shallowRef, useTemplateRef } from 'vue'
 import { getDocument, GlobalWorkerOptions, type PDFDocumentProxy } from 'pdfjs-dist'
 import workerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url'
 import MarkerControl, { type Marker } from './MarkerControl.vue'
+import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 
 GlobalWorkerOptions.workerSrc = workerUrl
@@ -15,6 +16,18 @@ const zoom = ref(100)
 const rendered = ref(0)
 const status = ref('')
 const marker = ref<Marker>({ text: 'sign here', page: 1, x: 20, y: 30, w: 30, h: 6 })
+const selectedPage = ref(1)
+const ocrBoxes = ref<OcrBox[]>([])
+
+const ocrBoxesByPage = computed(() => {
+  const byPage: Record<number, OcrBox[]> = {}
+
+  ocrBoxes.value.forEach((item) => {
+    byPage[item.page] = [...(byPage[item.page] ?? []), item]
+  })
+
+  return byPage
+})
 const viewer = useTemplateRef<HTMLElement>('viewer')
 
 const baseWidth = ref(0)
@@ -126,10 +139,24 @@ const onZoom = async () => {
   observe()
 }
 
-const goToPage = () => {
+const scrollToPage = (pageNumber: number) => {
   document
-    .getElementById(`page-${marker.value.page}`)
+    .getElementById(`page-${pageNumber}`)
     ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+const goToPage = () => scrollToPage(marker.value.page)
+
+const goToSelectedPage = () => scrollToPage(selectedPage.value)
+
+const jumpToOcrBox = (field: OcrBox) => {
+  selectedPage.value = field.page
+
+  const target =
+    document.querySelector(`[data-testid="ocr-box-${field.id}"]`) ??
+    document.getElementById(`page-${field.page}`)
+
+  target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 }
 
 onBeforeUnmount(() => observer?.disconnect())
@@ -175,6 +202,21 @@ const deps: Dependency[] = [
         >
           {{ marker.text }}
         </div>
+
+        <div
+          v-for="field in ocrBoxesByPage[slot.number] ?? []"
+          :key="field.id"
+          class="ocr-box"
+          :data-testid="`ocr-box-${field.id}`"
+          :style="{
+            left: `${field.box.x}%`,
+            top: `${field.box.y}%`,
+            width: `${field.box.w}%`,
+            height: `${field.box.h}%`,
+          }"
+        >
+          <span class="ocr-label">{{ field.label }}</span>
+        </div>
       </div>
 
       <p v-if="!pages.length" data-testid="empty-state">Choose a PDF to display it here.</p>
@@ -189,6 +231,8 @@ const deps: Dependency[] = [
           <li>Lazy rendering: only pages you scroll to are rasterised</li>
           <li>Whether dropping the text layer avoids the Safari polyfill</li>
           <li>What the bundle looks like using the modern build</li>
+          <li>Document AI boxes drawn as overlays, same as the wrapper page</li>
+          <li>Page jumping, bounded by the document's real page count</li>
         </ul>
         <p class="weight" data-testid="weight">
           Downloads <strong>155 KB over 6 requests</strong> (built app, compressed) &mdash; a
@@ -208,6 +252,17 @@ const deps: Dependency[] = [
       </label>
 
       <label>
+        Page <output data-testid="page-value">{{ selectedPage }}</output>
+        <select
+          v-model.number="selectedPage"
+          data-testid="page-select"
+          @change="goToSelectedPage"
+        >
+          <option v-for="n in doc?.numPages ?? 1" :key="n" :value="n">{{ n }}</option>
+        </select>
+      </label>
+
+      <label>
         Zoom <output data-testid="zoom-value">{{ zoom }}%</output>
         <input
           v-model.number="zoom"
@@ -219,6 +274,8 @@ const deps: Dependency[] = [
           @change="onZoom"
         />
       </label>
+
+      <OcrFieldList v-model="ocrBoxes" :max-page="doc?.numPages ?? 0" @jump="jumpToOcrBox" />
 
       <MarkerControl v-model="marker" :max-page="doc?.numPages ?? 1">
         <template #actions>
@@ -270,6 +327,27 @@ canvas {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.ocr-box {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  border: 2px solid rgba(200, 0, 120, 0.9);
+  background: rgba(255, 0, 140, 0.18);
+  pointer-events: none;
+}
+
+.ocr-label {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  padding: 0 4px;
+  background: rgba(200, 0, 120, 0.9);
+  color: #fff;
+  font-size: 10px;
+  line-height: 14px;
+  white-space: nowrap;
 }
 
 .marker {

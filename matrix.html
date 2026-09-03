@@ -48,9 +48,8 @@
   <body>
     <h1>PDF approach matrix</h1>
     <p class="lead">
-      Five ways to show a PDF in our Vue app, scored on what Product and engineering actually
-      have to decide. Every claim here was measured in this lab &mdash; details and evidence in
-      <code>ai-planning/vue-pdf-embed/findings.md</code>.
+      Six ways to show a PDF in our Vue app, scored on what Product and engineering actually
+      have to decide. Every claim here was measured in this lab.
     </p>
 
     <div class="scroll">
@@ -61,6 +60,11 @@
             <th><a href="/vue-pdf-embed.html">vue-pdf-embed</a> (pdf.js)</th>
             <th><a href="/canvas.html">pure canvas</a> (pdf.js core)</th>
             <th><a href="/annotate-native.html">annotpdf</a> → native</th>
+            <th>
+              pdf-lib forks → native<br />
+              <a href="/cantoo-pdf-lib.html">cantoo</a> ·
+              <a href="/pdfme-pdf-lib.html">pdfme</a>
+            </th>
             <th><a href="/embed-tag.html">native <code>&lt;embed&gt;</code></a></th>
             <th><a href="/pdfobject.html">pdfobject-vue</a></th>
           </tr>
@@ -82,6 +86,11 @@
               <span class="mark warn">⚠️ Whatever the browser shows</span>
               Writing the annotation works everywhere; displaying it is the browser's viewer again,
               so the same "looks different everywhere" caveat.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Same as annotpdf</span>
+              Writing works everywhere; display is the browser's viewer, so the same
+              "looks different everywhere" caveat.
             </td>
             <td>
               <span class="mark warn">⚠️ Works everywhere, looks different everywhere</span>
@@ -114,6 +123,11 @@
               natively and lazily. Bake cost grows with file size.
             </td>
             <td>
+              <span class="mark yes">✅ Native, plus a bake</span>
+              Same as annotpdf: milliseconds to rewrite our fixture, then the browser renders
+              natively and lazily.
+            </td>
+            <td>
               <span class="mark yes">✅ Effectively free</span>
               ~185&nbsp;ms to hand the file over, then the browser draws pages natively, lazily, as
               you scroll. Page count barely matters.
@@ -126,7 +140,7 @@
 
           <tr class="out" data-testid="row-mobile">
             <th>Mobile friendliness</th>
-            <td colspan="5">
+            <td colspan="6">
               <span class="mark na">❌ Out of scope</span>
               Decided on Aug&nbsp;31 not to handle mobile scenarios here. Not evaluated for any
               approach.
@@ -151,6 +165,10 @@
               position is lost. Fine for a pre-marked document, useless for hover.
             </td>
             <td>
+              <span class="mark no">❌ Not for live selection</span>
+              Same wall: every change rewrites the file and reloads the viewer.
+            </td>
+            <td>
               <span class="mark no">❌ Impossible</span>
               There is nothing to anchor to: no text nodes, no coordinates, no scroll position. A
               box you inject stays put while the page scrolls away underneath it.
@@ -158,6 +176,37 @@
             <td>
               <span class="mark no">❌ Impossible</span>
               Same wall &mdash; it renders the same opaque viewer.
+            </td>
+          </tr>
+          <tr>
+            <th>Ingest Document AI bounding boxes</th>
+            <td>
+              <span class="mark yes">✅ As overlays</span>
+              Paste an entity and the box lands within 0.1% of the stated coordinates, without
+              touching the file. Normalized vertices are already page fractions, so no conversion.
+            </td>
+            <td>
+              <span class="mark yes">✅ Identical</span>
+              Same parser, same overlay technique on our own canvases — verified at
+              19.2%, 58.3% on page 3.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Baked into the file</span>
+              Each field becomes a real annotation, so it survives download — but every change
+              rewrites the document and reloads the viewer.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Baked, annotation or drawn content</span>
+              Same as annotpdf, and it reads the page size itself so the backend needn't send
+              dimensions.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              No coordinate system to place them in.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              Same.
             </td>
           </tr>
 
@@ -179,6 +228,10 @@
             </td>
             <td>
               <span class="mark no">❌ Browser's UI only</span>
+              No rasteriser means no render scale of ours to control.
+            </td>
+            <td>
+              <span class="mark no">❌ Browser's UI only</span>
               You can't read, drive, restyle or hide its zoom. Only a load-time
               <code>#zoom=</code>, which needs a reload.
             </td>
@@ -189,7 +242,7 @@
           </tr>
 
           <tr class="section" data-testid="section-annotations">
-            <th colspan="6">Annotations &mdash; how good is it, really</th>
+            <th colspan="7">Annotations &mdash; how good is it, really</th>
           </tr>
 
           <tr>
@@ -207,6 +260,11 @@
               <span class="mark yes">✅ Yes &mdash; that's the point</span>
               Verified: Chrome's own viewer draws our baked pink box, thumbnail included, with no
               pdf.js anywhere.
+            </td>
+            <td>
+              <span class="mark yes">✅ Yes, two ways</span>
+              As a real annotation, or as <em>drawn page content</em> — which every viewer renders
+              because it isn't an annotation at all.
             </td>
             <td>
               <span class="mark yes">✅ Yes</span>
@@ -235,6 +293,10 @@
               Its own parser lists annotations &mdash; we used that to confirm each bake landed.
             </td>
             <td>
+              <span class="mark yes">✅ Yes</span>
+              Loads and walks the object model, so we read back what we wrote (verified).
+            </td>
+            <td>
               <span class="mark no">❌ Nothing</span>
               Zero annotation nodes, zero text reachable. The viewer lives outside the DOM.
             </td>
@@ -255,6 +317,10 @@
               <span class="mark warn">⚠️ We'd build it</span>
               We have the rectangles, so scrolling to one is easy &mdash; but there's no rendered
               annotation element to target unless we draw that layer.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
+              Nothing inside the viewer is reachable.
             </td>
             <td>
               <span class="mark no">❌ No</span>
@@ -286,6 +352,10 @@
               It can write annotations, but we didn't verify hidden flags survive its writer.
             </td>
             <td>
+              <span class="mark yes">✅ Full object-model access</span>
+              We build the dictionary ourselves, so any flag or hidden field is ours to set.
+            </td>
+            <td>
               <span class="mark no">❌ No</span>
             </td>
             <td>
@@ -314,12 +384,16 @@
             </td>
             <td>
               <span class="mark no">❌ No</span>
+              An overlay can't follow the page.
+            </td>
+            <td>
+              <span class="mark no">❌ No</span>
               Same.
             </td>
           </tr>
 
           <tr class="section">
-            <th colspan="6">Cost and risk</th>
+            <th colspan="7">Cost and risk</th>
           </tr>
 
           <tr>
@@ -337,6 +411,10 @@
               <span class="mark yes">✅ Most durable output</span>
               The mark is <em>in the file</em>, so it survives download, print, email and any other
               PDF reader. Nothing else here can say that.
+            </td>
+            <td>
+              <span class="mark yes">✅ Most durable, and maintained</span>
+              Same in-the-file durability as annotpdf, but on a library that still gets releases.
             </td>
             <td>
               <span class="mark warn">⚠️ Moves under us</span>
@@ -368,6 +446,11 @@
               output is standard PDF though, so a replacement writer is swappable.
             </td>
             <td>
+              <span class="mark yes">✅ Lowest of the writers</span>
+              cantoo shipped two weeks ago, pdfme in July. Note the <em>original</em> pdf-lib is
+              itself dormant since 2021 — pick a fork deliberately.
+            </td>
+            <td>
               <span class="mark warn">⚠️ Different flavour of the same problem</span>
               Nothing to upgrade, but browser vendors change the viewer whenever they like and we
               can't pin a browser.
@@ -394,6 +477,11 @@
               Its only published version is from <strong>2022-04-05</strong>, and the project it was
               forked from last committed <strong>2022-01-15</strong>. It works today; nobody is
               fixing it tomorrow. Its <code>pako</code> pin is stuck on 1.x while 3.x ships.
+            </td>
+            <td>
+              <span class="mark yes">✅ Weeks ago</span>
+              <code>@cantoo/pdf-lib</code> 2026-08-18, <code>@pdfme/pdf-lib</code> 2026-07-23.
+              Upstream <code>pdf-lib</code> itself: 2022-05-12.
             </td>
             <td>
               <span class="mark yes">✅ Not applicable</span>
@@ -423,6 +511,11 @@
               Coordinate conversion plus a re-bake-and-reload flow. Far less than owning a viewer.
             </td>
             <td>
+              <span class="mark warn">⚠️ Medium, plus spec homework</span>
+              There is <strong>no annotation API</strong> — you hand-build the dictionary, roughly
+              ten lines per annotation type. Drawing content is a one-liner though.
+            </td>
+            <td>
               <span class="mark yes">✅ Tiny</span>
               One tag and an object URL. Viewer, toolbar, print and download come free.
             </td>
@@ -447,6 +540,11 @@
             <td>
               <span class="mark yes">✅ 84&nbsp;KB</span>
               All of it up front, nothing deferred.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ 224–257 KB</span>
+              Measured in isolated builds: pdfme ~224 KB gzip, cantoo ~257 KB. Four to five times
+              annotpdf, still a third of pdf.js.
             </td>
             <td>
               <span class="mark yes">✅ Nothing</span>
@@ -474,6 +572,11 @@
             <td>
               <span class="mark yes">✅ +54&nbsp;KB gzip</span>
               annotpdf plus crypto-js and pako.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ +224 KB (pdfme) or +257 KB (cantoo)</span>
+              These libraries barely tree-shake: loading a document pulls in most of the parser and
+              writer either way.
             </td>
             <td>
               <span class="mark yes">✅ +0&nbsp;KB</span>
@@ -504,6 +607,11 @@
               <code>pako</code>. Ships its own TypeScript types.
             </td>
             <td>
+              <span class="mark yes">✅ One, self-contained</span>
+              Either fork alone, no transitive runtime deps of consequence. cantoo adds encryption,
+              PDF/A and incremental save; pdfme is the leaner core.
+            </td>
+            <td>
               <span class="mark yes">✅ None</span>
               The browser is the dependency. Nothing to install, upgrade or audit.
             </td>
@@ -528,6 +636,10 @@
             <td>
               <span class="mark warn">⚠️ Narrow</span>
               It does one thing well. There's no step two.
+            </td>
+            <td>
+              <span class="mark warn">⚠️ Narrow, like annotpdf</span>
+              It writes files. It will never render or zoom.
             </td>
             <td>
               <span class="mark warn">⚠️ One step, then a wall</span>
@@ -559,6 +671,11 @@
               coordinates &mdash; or we regex the MediaBox and hope.
             </td>
             <td>
+              <span class="mark yes">✅ Coordinates only</span>
+              Better than annotpdf: <code>page.getSize()</code> gives the page box, so the BE only
+              needs to send OCR coordinates, not dimensions.
+            </td>
+            <td>
               <span class="mark yes">✅ Just serve the file</span>
               No FE contract to design. But it also can't consume OCR coordinates at all, so any
               BE work for highlighting would be wasted here.
@@ -582,6 +699,10 @@
             <td>
               The one way to get a real highlight into the free native viewer. Great for "here's your
               pre-marked document", wrong for interactive selection.
+            </td>
+            <td>
+              The maintained way to bake marks into a document. Same ceiling as annotpdf, none of
+              the abandonment risk, and it reads the page size itself.
             </td>
             <td>
               Unbeatable if the requirement is only "show the user this PDF". Cannot grow into
