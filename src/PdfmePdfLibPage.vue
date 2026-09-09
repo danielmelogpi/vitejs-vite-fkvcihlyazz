@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { PDFDocument, PDFString, rgb } from '@pdfme/pdf-lib'
+import { BlendMode, PDFDocument, PDFString, rgb } from '@pdfme/pdf-lib'
 import PdfWriterPage, { type PdfWriter } from './PdfWriterPage.vue'
 import { type Dependency } from './DependencyList.vue'
 
 // the forks are structurally identical pdf-lib builds; one cast keeps the shared page monomorphic
-const lib = { PDFDocument, PDFString, rgb } as unknown as PdfWriter
+const lib = { BlendMode, PDFDocument, PDFString, rgb } as unknown as PdfWriter
 
 const capabilities = [
   'No fork extras — plain pdf-lib core, which is why it is the lighter of the two',

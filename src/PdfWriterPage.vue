@@ -9,6 +9,7 @@ export type PdfWriter = {
   PDFDocument: Cantoo['PDFDocument']
   PDFString: Cantoo['PDFString']
   rgb: Cantoo['rgb']
+  BlendMode: Cantoo['BlendMode']
 }
 
 type Mode = 'annotation' | 'content'
@@ -53,7 +54,7 @@ const bake = async () => {
   }
 
   try {
-    const { PDFDocument, PDFString, rgb } = props.lib
+    const { PDFDocument, PDFString, rgb, BlendMode } = props.lib
 
     const doc = await PDFDocument.load(source.value)
     pageCount.value = doc.getPageCount()
@@ -75,18 +76,45 @@ const bake = async () => {
       const top = height - (box.y / 100) * height
       const bottom = height - ((box.y + box.h) / 100) * height
 
+      const [r, g, b] = dimmed ? [0.23, 0.47, 0.86] : [1, 0, 0.55]
+
       if (mode.value === 'annotation') {
+        const boxWidth = right - left
+        const boxHeight = top - bottom
+
+        // without an /AP of our own the viewer synthesises an opaque one and buries the text
+        const appearance = doc.context.stream(
+          [
+            '/GS gs',
+            `${r} ${g} ${b} rg`,
+            `${r} ${g} ${b} RG`,
+            '1.5 w',
+            `0.75 0.75 ${(boxWidth - 1.5).toFixed(2)} ${(boxHeight - 1.5).toFixed(2)} re`,
+            'B',
+          ].join('\n'),
+          {
+            Type: 'XObject',
+            Subtype: 'Form',
+            FormType: 1,
+            BBox: [0, 0, boxWidth, boxHeight],
+            Resources: {
+              ExtGState: { GS: { Type: 'ExtGState', ca: 0.3, CA: 1, BM: 'Multiply' } },
+            },
+          },
+        )
+
         const annot = doc.context.obj({
           Type: 'Annot',
           Subtype: 'Square',
           Rect: [left, bottom, right, top],
-          C: dimmed ? [0.23, 0.47, 0.86] : [1, 0, 0.55],
-          IC: dimmed ? [0.88, 0.92, 0.98] : [1, 0.86, 0.94],
-          CA: 0.6,
+          C: [r, g, b],
+          IC: [r, g, b],
+          CA: 1,
           F: 4,
           T: PDFString.of('closinglock-lab'),
           Contents: PDFString.of(label),
-          Border: [0, 0, 2],
+          Border: [0, 0, 0],
+          AP: { N: doc.context.register(appearance) },
         })
 
         page.node.addAnnot(doc.context.register(annot))
@@ -98,10 +126,12 @@ const bake = async () => {
         y: bottom,
         width: right - left,
         height: top - bottom,
-        borderColor: dimmed ? rgb(0.23, 0.47, 0.86) : rgb(0.78, 0, 0.55),
+        borderColor: rgb(r, g, b),
         borderWidth: 1.5,
-        color: dimmed ? rgb(0.88, 0.92, 0.98) : rgb(1, 0.86, 0.94),
-        opacity: 0.55,
+        color: rgb(r, g, b),
+        opacity: 0.3,
+        borderOpacity: 1,
+        blendMode: BlendMode.Multiply,
       })
     })
 
@@ -164,6 +194,10 @@ onBeforeUnmount(revoke)
           <li>Render the PDF: <strong>it can't</strong> — no rasteriser, so the browser draws it</li>
           <li>Custom annotations: yes, as real <code>/Annot</code> objects</li>
           <li>Or as drawn page content, which every viewer renders</li>
+          <li>
+            Transparency needs an explicit <code>/AP</code> — without one the viewer synthesises an
+            opaque box and buries the text
+          </li>
           <li>Document AI bounding boxes baked straight into the file</li>
           <li>Custom zoom: <strong>not possible</strong> — the viewer owns it</li>
           <li v-for="item in capabilities" :key="item">{{ item }}</li>

@@ -61,6 +61,12 @@
         <strong>~224 KB</strong> of library.
       </li>
       <li>
+        <a data-testid="link-no-polyfill" href="/no-polyfill.html">unpolyfilled &rarr; iframe fallback</a><br />
+        The same pdf.js viewer with the Safari polyfill left out, so it breaks where Safari breaks.
+        Detects the failure and degrades to the browser's own viewer — which still costs the full
+        <strong>830 KB</strong>, because pdf.js has to download before it can fail.
+      </li>
+      <li>
         <a data-testid="link-embed-tag" href="/embed-tag.html">native <code>&lt;embed&gt;</code></a><br />
         The browser's own viewer, via <code>&lt;embed&gt;</code> / <code>&lt;object&gt;</code> /
         <code>&lt;iframe&gt;</code>. Free toolbar, but no JS API and no scroll-to-page without a

@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { PDFDocument, PDFString, rgb } from '@cantoo/pdf-lib'
+import { BlendMode, PDFDocument, PDFString, rgb } from '@cantoo/pdf-lib'
 import PdfWriterPage, { type PdfWriter } from './PdfWriterPage.vue'
 import { type Dependency } from './DependencyList.vue'
 
-const lib: PdfWriter = { PDFDocument, PDFString, rgb }
+const lib: PdfWriter = { BlendMode, PDFDocument, PDFString, rgb }
 
 const capabilities = [
   'Fork extras: encrypt (AES-256), convertToPDFA, saveIncremental, takeSnapshot, layers',

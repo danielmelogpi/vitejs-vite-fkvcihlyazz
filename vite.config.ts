@@ -19,6 +19,7 @@ export default defineConfig({
         canvas: entry('canvas'),
         cantooPdfLib: entry('cantoo-pdf-lib'),
         pdfmePdfLib: entry('pdfme-pdf-lib'),
+        noPolyfill: entry('no-polyfill'),
       },
     },
   },
