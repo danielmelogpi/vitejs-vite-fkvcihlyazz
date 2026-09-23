@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import DependencyList, { type Dependency } from './DependencyList.vue'
 import OcrFieldList, { type OcrBox } from './OcrFieldList.vue'
+import { addBoxAnnotation } from './pdfAnnotations'
 
 type Cantoo = typeof import('@cantoo/pdf-lib')
 
@@ -79,45 +80,7 @@ const bake = async () => {
       const [r, g, b] = dimmed ? [0.23, 0.47, 0.86] : [1, 0, 0.55]
 
       if (mode.value === 'annotation') {
-        const boxWidth = right - left
-        const boxHeight = top - bottom
-
-        // without an /AP of our own the viewer synthesises an opaque one and buries the text
-        const appearance = doc.context.stream(
-          [
-            '/GS gs',
-            `${r} ${g} ${b} rg`,
-            `${r} ${g} ${b} RG`,
-            '1.5 w',
-            `0.75 0.75 ${(boxWidth - 1.5).toFixed(2)} ${(boxHeight - 1.5).toFixed(2)} re`,
-            'B',
-          ].join('\n'),
-          {
-            Type: 'XObject',
-            Subtype: 'Form',
-            FormType: 1,
-            BBox: [0, 0, boxWidth, boxHeight],
-            Resources: {
-              ExtGState: { GS: { Type: 'ExtGState', ca: 0.3, CA: 1, BM: 'Multiply' } },
-            },
-          },
-        )
-
-        const annot = doc.context.obj({
-          Type: 'Annot',
-          Subtype: 'Square',
-          Rect: [left, bottom, right, top],
-          C: [r, g, b],
-          IC: [r, g, b],
-          CA: 1,
-          F: 4,
-          T: PDFString.of('closinglock-lab'),
-          Contents: PDFString.of(label),
-          Border: [0, 0, 0],
-          AP: { N: doc.context.register(appearance) },
-        })
-
-        page.node.addAnnot(doc.context.register(annot))
+        addBoxAnnotation({ doc, page, box, label, color: [r, g, b], pdfString: PDFString })
         return
       }
 

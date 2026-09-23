@@ -67,6 +67,21 @@
         <strong>830 KB</strong>, because pdf.js has to download before it can fail.
       </li>
       <li>
+        <a data-testid="link-docai-matches" href="/docai-matches.html">Document AI matches &rarr; annotations</a><br />
+        Upload a Document AI response and its PDF. Lists every match, flags the ones with no bounding
+        box, and writes the selected ones into the PDF as annotations.
+      </li>
+      <li>
+        <a data-testid="link-native-jump" href="/native-jump.html">native viewer coordinate jumps</a><br />
+        Document AI boxes converted to PDF points and pushed through the URL fragment
+        (<code>#page=N&amp;zoom=scale,left,top</code>). No pdf.js — it scrolls, it does not highlight.
+      </li>
+      <li>
+        <a data-testid="link-print-guard" href="/print-guard.html">print-on-open guard</a><br />
+        Some documents carry <code>/OpenAction &rarr; this.print()</code> and Firefox obeys it. Tries
+        every way of catching or blocking that from the embedding page.
+      </li>
+      <li>
         <a data-testid="link-embed-tag" href="/embed-tag.html">native <code>&lt;embed&gt;</code></a><br />
         The browser's own viewer, via <code>&lt;embed&gt;</code> / <code>&lt;object&gt;</code> /
         <code>&lt;iframe&gt;</code>. Free toolbar, but no JS API and no scroll-to-page without a
